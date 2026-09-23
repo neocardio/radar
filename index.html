@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radar · Inversiones</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Radar">
+<meta name="theme-color" content="#0a0e14">
+<meta name="color-scheme" content="dark">
+<link rel="manifest" href='data:application/manifest+json,{"name":"Radar de inversiones","short_name":"Radar","display":"standalone","start_url":".","background_color":"%230a0e14","theme_color":"%230a0e14","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2722%27 fill=%27%230a0e14%27/%3E%3Cpolyline points=%2718,68 36,52 50,60 66,38 82,30%27 fill=%27none%27 stroke=%27%2326c281%27 stroke-width=%278%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27/%3E%3C/svg%3E","sizes":"any","type":"image/svg+xml"}]}'>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230a0e14'/%3E%3Cpolyline points='18,68 36,52 50,60 66,38 82,30' fill='none' stroke='%2326c281' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0e14; --panel:#111722; --panel2:#182030; --line:#22304a; --ink:#e8edf5; --muted:#8a96ad; --dim:#5d6a84;
+  --up:#26c281; --down:#ff5a5f; --amber:#f5b942; --accent:#4f8cff; --accent-2:#2a5bd7;
+  --mono:"SF Mono",Menlo,Consolas,"Roboto Mono",monospace; --sans:Arial,Helvetica,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.5;padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px 12px;width:100%;font-size:17px;outline:none;-webkit-appearance:none;appearance:none}
+input:focus,select:focus{border-color:var(--accent)}
+input[type=date]{min-height:46px}
+label{display:block;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+h1{font-size:22px;margin:0;line-height:1.1;letter-spacing:.04em;text-transform:uppercase}
+h2{font-size:20px;margin:26px 0 8px;line-height:1.15;letter-spacing:.02em}
+h3{font-size:17px;margin:18px 0 6px;line-height:1.2;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+p{margin:8px 0} ul{padding-left:20px;margin:6px 0} li{margin:5px 0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .down{color:var(--down)} .amber{color:var(--amber)} .muted{color:var(--muted)}
+.wrap{max-width:720px;margin:0 auto;padding:12px 14px 20px}
+.small{font-size:13px;color:var(--muted)}
+.i{display:inline-block;font-size:12px;line-height:1;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 7px;margin:0 2px;vertical-align:middle;white-space:nowrap;font-family:var(--mono)}
+/* header + tape */
+header.top{position:sticky;top:0;background:rgba(10,14,20,.94);backdrop-filter:blur(8px);z-index:5;border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+header .in{max-width:720px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px 8px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:26px;height:26px}
+.status{font-size:12px;color:var(--muted);text-align:right;line-height:1.3;font-family:var(--mono)}
+.status b{color:var(--up);font-weight:400} .status .off{color:var(--amber)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;letter-spacing:.02em}
+.tape{overflow:hidden;border-top:1px solid var(--line);background:#070a10;height:30px}
+.tape .track{display:inline-flex;white-space:nowrap;animation:tape 45s linear infinite;padding:5px 0}
+.tape span{font-family:var(--mono);font-size:13px;margin:0 18px;color:var(--muted)}
+.tape b{color:var(--ink);font-weight:400;margin-right:6px}
+@keyframes tape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.view{display:none} .view.on{display:block}
+/* portfolio summary */
+.hero{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+.hero .lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hero .tot{font-size:38px;font-weight:700;line-height:1.05;margin:4px 0 2px}
+.hero .sub{font-size:15px}
+.hgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+.hgrid div{background:rgba(0,0,0,.25);border-radius:9px;padding:8px 10px}
+.hgrid .lbl{font-size:10px} .hgrid .v{font-size:14px;font-weight:700;margin-top:3px;line-height:1.3}
+.cur{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin-top:12px}
+.cur button{padding:6px 14px;font-size:13px;font-family:var(--mono);color:var(--muted)}
+.cur button.on{background:var(--accent);color:#fff}
+.actions{display:flex;gap:10px;margin:12px 0 4px}
+.btn{flex:1;background:var(--accent);color:#fff;border-radius:10px;padding:13px 14px;font-weight:700;text-align:center;font-size:16px}
+.btn.ghost{background:var(--panel);border:1px solid var(--line);color:var(--ink);font-weight:400}
+.btn.danger{background:transparent;border:1px solid var(--down);color:var(--down)}
+/* rows */
+.sec{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 6px}
+.sec h3{margin:0}
+.row{display:flex;align-items:center;gap:10px}
+.pos{width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;display:block}
+.pos:active{background:var(--panel2)}
+.tk{font-size:18px;font-weight:700;letter-spacing:.04em}
+.nm{font-size:13px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.tengo{background:var(--accent-2);color:#fff;border-color:var(--accent-2)}
+.mid{display:flex;align-items:flex-end;gap:10px;margin-top:8px}
+.px{font-size:22px;font-weight:700;line-height:1}
+.ch{font-size:15px;font-weight:700;margin-left:6px}
+.spark{flex:1;height:38px} .spark svg{width:100%;height:38px;display:block}
+.pl-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-family:var(--mono)}
+.sig{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sig span{font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;border-radius:4px;background:var(--panel2);color:var(--muted)}
+.sig .g{color:var(--up)} .sig .r{color:var(--down)} .sig .a{color:var(--amber)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted);text-align:center;font-size:15px}
+/* filter chips */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.chips button{font-size:13px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);letter-spacing:.02em}
+.chips button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* detail */
+.detail{position:fixed;inset:0;background:var(--bg);z-index:32;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
+.detail.on{display:block}
+.dhead{position:sticky;top:0;background:rgba(10,14,20,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;gap:12px;z-index:2}
+.back{font-size:15px;color:var(--accent);padding:6px 8px 6px 0}
+.dbody{max-width:720px;margin:0 auto;padding:14px 14px calc(40px + env(safe-area-inset-bottom))}
+.bigpx{font-size:36px;font-weight:700;line-height:1;margin:6px 0 2px}
+.chart{border:1px solid var(--line);border-radius:12px;padding:10px 6px 6px;margin:12px 0 6px;background:var(--panel)}
+.chart svg{width:100%;height:auto;display:block}
+.leg{display:flex;gap:14px;font-size:12px;color:var(--muted);padding:2px 8px 4px;flex-wrap:wrap;font-family:var(--mono)}
+.leg i{display:inline-block;width:18px;height:2px;vertical-align:middle;margin-right:6px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;margin:6px 0}
+.seg button{padding:6px 13px;font-size:13px;color:var(--muted);font-family:var(--mono)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi .l{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kpi .v{font-size:19px;font-weight:700;margin-top:3px}
+.bar{position:relative;height:6px;background:var(--panel2);border-radius:999px;margin:8px 0 4px}
+.bar i{position:absolute;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--accent);transform:translateX(-50%)}
+.rl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.pl{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.pl span{font-size:12px;padding:4px 9px;border-radius:4px;background:var(--panel2);color:var(--muted)}
+.pl .p{border-left:2px solid var(--up)} .pl .n{border-left:2px solid var(--down)}
+table.lots{width:100%;border-collapse:collapse;font-size:13px;font-family:var(--mono);margin:6px 0}
+.lots td,.lots th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.lots th{color:var(--muted);font-weight:400;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.lots td:first-child,.lots th:first-child{text-align:left}
+.lots .del{color:var(--down);padding:2px 6px}
+/* referentes / fichas / aprende */
+.panel{display:none;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:10px;background:var(--panel)}
+.panel.on{display:block}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px;margin:8px 0}
+.kv span:first-child{color:var(--muted)}
+.pend{color:var(--amber)}
+.card{border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;background:var(--panel)}
+table.ft{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0 14px}
+.ft th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:400;padding:4px 6px;border-bottom:1px solid var(--line)}
+.ft td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.ft td:first-child{font-weight:700;width:36%}
+.ft.posT td:first-child{border-left:2px solid var(--up)} .ft.negT td:first-child{border-left:2px solid var(--down)}
+.lesson{background:var(--panel2);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px;margin:14px 0}
+details{border-bottom:1px solid var(--line);padding:10px 0}
+summary{font-size:17px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--muted);font-weight:400} details[open] summary::after{content:"−"}
+details p{font-size:15px;color:#c9d2e3}
+table.cal{width:100%;border-collapse:collapse;font-size:15px}
+.cal td{padding:8px 4px;border-top:1px solid var(--line);vertical-align:top}
+.cal td:first-child{white-space:nowrap;color:var(--muted);width:90px;font-family:var(--mono);font-size:13px}
+.note{background:var(--panel2);border-radius:10px;padding:12px 14px;font-size:15px;margin:10px 0}
+.aviso{font-size:12px;color:var(--dim);margin-top:24px;line-height:1.5}
+/* emblemas referentes */
+.emb{width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:20px;letter-spacing:.02em;color:#fff;flex:none}
+.rhead{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+.rhead h2{margin:0;font-size:18px} .rhead .small{margin-top:2px}
+.bio{color:#c9d2e3;font-size:15px;border-left:2px solid var(--line);padding-left:10px;margin:8px 0 12px}
+/* top5 */
+.top5{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin:12px 0;overflow:hidden}
+.top5 .hd{padding:12px 14px;border-bottom:1px solid var(--line)}
+.top5 .hd b{font-size:16px}
+.t5{padding:10px 14px;border-bottom:1px solid var(--line)}
+.t5:last-child{border-bottom:0}
+.t5 .hr{display:flex;align-items:center;gap:10px}
+.t5 .rk{font-family:var(--mono);color:var(--dim);width:16px}
+.t5 .tk{font-size:16px;width:60px}
+.t5 .nm{flex:1}
+.t5 .cnt{font-family:var(--mono);font-size:12px;text-align:right;color:var(--muted);white-space:nowrap}
+.t5 .cnt b{color:var(--up);font-weight:400}
+.t5 .why{font-size:13px;color:var(--muted);margin:6px 0 0 26px;line-height:1.4}
+.bars{height:4px;border-radius:3px;background:var(--down);overflow:hidden;display:flex;margin-top:4px;width:100%}
+.bars i{display:block;height:100%} .bars .b{background:var(--up)} .bars .h{background:var(--amber)}
+.req{border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:15px}
+.req .del{color:var(--down);padding:2px 8px}
+textarea{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px 12px;width:100%;font-size:16px;outline:none;min-height:80px;resize:vertical}
+.out{background:#070a10;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:13px;white-space:pre-wrap;color:#c9d2e3;margin-top:10px}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.modal.on{display:flex}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:18px 18px 0 0;width:100%;max-width:720px;max-height:92vh;overflow-y:auto;padding:16px 18px calc(24px + env(safe-area-inset-bottom))}
+.mbox h2{margin:0 0 4px}
+.mhead{display:flex;justify-content:space-between;align-items:center}
+.x{font-size:26px;color:var(--muted);padding:4px 8px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opt{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:14px;color:var(--muted);font-family:var(--mono)}
+.opt.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.opt.sig.on{background:var(--panel2);color:var(--ink);border-color:var(--ink)}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.err{color:var(--down);font-size:14px;margin-top:8px}
+/* sheet (glossary) */
+.sheet{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);border-radius:18px 18px 0 0;z-index:60;transform:translateY(105%);transition:transform .22s ease;padding:16px 18px calc(22px + env(safe-area-inset-bottom));max-height:70vh;overflow-y:auto}
+.sheet.on{transform:none} .sheet h3{margin:0 0 6px;color:var(--ink);text-transform:none;letter-spacing:0;font-size:20px} .sheet p{font-size:16px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;display:none} .scrim.on{display:block}
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(10,14,20,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:9px 2px 7px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--up)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="in">
+    <div class="brand"><svg viewBox="0 0 100 100"><polyline points="10,72 32,50 48,60 68,32 90,22" fill="none" stroke="var(--up)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg><h1 id="title">Radar</h1></div>
+    <div class="row"><div class="status" id="status">cargando…</div><button class="avatar" id="avatar" aria-label="Perfil">?</button></div>
+  </div>
+  <div class="tape"><div class="track" id="tape"></div></div>
+</header>
+
+<!-- CARTERA -->
+<section class="view on" id="v-cartera"><div class="wrap" id="cartera"></div></section>
+<!-- SEMANA -->
+<section class="view" id="v-semana"><div class="wrap" id="semana"></div></section>
+<!-- REFERENTES -->
+<section class="view" id="v-ref"><div class="wrap">
+  <p class="small" style="margin-top:8px">Qué tenían al 30 de junio según sus reportes 13F <button class="i" data-def="13f">i</button>. Se actualiza cada trimestre.</p>
+  <div class="chips" id="refchips"></div><div id="refpanels"></div>
+</div></section>
+<!-- FICHAS -->
+<section class="view" id="v-fichas"><div class="wrap">
+  <p class="small" style="margin-top:8px">Análisis fundamental de empresas que pedimos estudiar. Primero lo positivo, luego lo negativo, después el desarrollo. Nunca "compra" o "vende".</p>
+  <div class="actions"><button class="btn" data-open="m-req">+ Pedir ficha de una acción, ETF o instrumento</button></div>
+  <div id="reqlist"></div>
+  <div class="top5"><div class="hd"><b>Fichas solicitadas esta semana</b><div class="small" id="solicitadas">Edición 2: <b>ONON</b> (On Holding), pedida por el editor. Las solicitudes que lleguen antes del sábado 26 a las 12:00 salen el domingo 27.</div></div></div>
+  <div id="top5"></div>
+  <h3>Fichas publicadas</h3>
+  <div class="chips" id="fchips"></div><div id="fbody"></div>
+</div></section>
+<!-- APRENDE -->
+<section class="view" id="v-aprende"><div class="wrap">
+  <div class="note" id="concepto"></div>
+  <h3>Glosario del trader</h3><p class="small">Los términos que escucharás en cualquier conversación de bolsa, en orden de lo más básico a lo más conductual.</p><div id="glosT"></div>
+  <h3>Glosario de los datos de la app</h3><div id="glos"></div>
+  <h3>Cómo leer tu cartera</h3>
+  <ul>
+    <li><b>Valor</b>: lo que valen hoy todas tus acciones al precio actual.</li>
+    <li><b>Costo</b>: lo que pagaste por ellas (sumando cada compra). <b>Rendimiento</b> = valor − costo.</li>
+    <li><b>Hoy</b>: cuánto cambió tu cartera solo en la sesión de hoy.</li>
+    <li>Si registraste una compra en pesos, la app la convierte a dólares con el tipo de cambio que anotaste (o el de hoy si lo dejaste vacío). Por eso el rendimiento en pesos y en dólares no coinciden exactamente: el peso también se mueve.</li>
+  </ul>
+</div></section>
+
+<!-- DETAIL -->
+<section class="detail" id="detail">
+  <div class="dhead"><button class="back" id="back">‹ Cartera</button><span class="tk" id="d-tk"></span><span class="nm" id="d-nm"></span><span class="tag" id="d-tag"></span></div>
+  <div class="dbody" id="dbody"></div>
+</section>
+
+<!-- MODAL PERFIL -->
+<div class="modal" id="m-perfil"><div class="mbox">
+  <div class="mhead"><h2 id="perfil-title">Tu registro</h2><button class="x" data-close="m-perfil">×</button></div>
+  <p class="small">Todo se guarda solo en este teléfono. Nada sale a internet.</p>
+  <label>Tu nombre</label><input id="p-name" placeholder="Por ejemplo: Alejandro" maxlength="30">
+  <label>Moneda en la que quieres ver tu cartera</label>
+  <div class="opts" id="p-cur"><button class="opt on" data-v="USD">USD · dólares</button><button class="opt" data-v="MXN">MXN · pesos</button></div>
+  <label>Acciones que sigues (sin tenerlas)</label>
+  <div class="opts" id="p-sigo"></div>
+  <p class="hint">Las que tienes se marcan solas cuando registras una compra. Para agregar una empresa que no está en la lista, pídela y la sumamos a la base de datos.</p>
+  <div class="actions"><button class="btn" id="p-save">Guardar</button></div>
+  <div class="actions" id="p-danger" style="display:none"><button class="btn ghost" id="p-export">Exportar respaldo</button><button class="btn danger" id="p-reset">Borrar todo</button></div>
+</div></div>
+
+<!-- MODAL MOVIMIENTO -->
+<div class="modal" id="m-mov"><div class="mbox">
+  <div class="mhead"><h2>Registrar movimiento</h2><button class="x" data-close="m-mov">×</button></div>
+  <label>Tipo</label><div class="opts" id="mv-tipo"><button class="opt on" data-v="compra">Compra</button><button class="opt" data-v="venta">Venta</button></div>
+  <label>Instrumento</label><select id="mv-tk"></select>
+  <div id="mv-custom" style="display:none">
+    <div class="two"><div><label>Ticker</label><input id="mc-tk" placeholder="Ej. VOO, SOL, FUNO11" maxlength="12" style="text-transform:uppercase"></div><div><label>Tipo</label><select id="mc-tipo"><option value="Accion">Acción</option><option value="ETF">ETF</option><option value="Cripto">Cripto</option><option value="BMV">Bolsa Mexicana</option><option value="Bono">Bono / CETES</option><option value="Fondo">Fondo</option><option value="Otro">Otro</option></select></div></div>
+    <label>Nombre</label><input id="mc-nm" placeholder="Nombre del instrumento" maxlength="40">
+    <div class="two"><div><label>Precio actual (manual)</label><input type="number" inputmode="decimal" step="any" min="0" id="mc-px" placeholder="0.00"></div><div><label>Moneda del precio</label><div class="opts" id="mc-ccy"><button class="opt on" data-v="USD">USD</button><button class="opt" data-v="MXN">MXN</button></div></div></div>
+    <p class="hint">No está en la base, así que no tendrá precio en vivo ni gráfica: tú actualizas el precio cuando quieras desde su tarjeta. Pídeme agregarlo a la base y en la siguiente versión tendrá datos automáticos.</p>
+  </div>
+  <div class="two"><div><label>Fecha</label><input type="date" id="mv-fecha"></div><div><label>Acciones (lote)</label><input type="number" inputmode="decimal" step="any" min="0" id="mv-q" placeholder="10"></div></div>
+  <label>Precio por acción</label>
+  <div class="two"><div><input type="number" inputmode="decimal" step="any" min="0" id="mv-px" placeholder="0.00"></div><div class="opts" id="mv-cur"><button class="opt on" data-v="USD">USD</button><button class="opt" data-v="MXN">MXN</button></div></div>
+  <div id="mv-fxwrap" style="display:none"><label>Tipo de cambio ese día (opcional)</label><input type="number" inputmode="decimal" step="any" id="mv-fx" placeholder="Si lo dejas vacío uso el de hoy"></div>
+  <label>Nota (opcional)</label><input id="mv-nota" placeholder="Por qué la compraste, qué esperas…" maxlength="80">
+  <div class="err" id="mv-err"></div>
+  <div class="actions"><button class="btn" id="mv-save">Guardar movimiento</button></div>
+</div></div>
+
+<!-- MODAL PEDIR FICHA -->
+<div class="modal" id="m-req"><div class="mbox">
+  <div class="mhead"><h2>Pedir una ficha</h2><button class="x" data-close="m-req">×</button></div>
+  <div class="note" style="font-size:14px"><b>Reglas:</b> una sola solicitud por persona por semana (si mandas dos, cuenta la última). Cierre: <b>sábado a las 12:00</b>. La ficha sale el domingo en la sección Semana / Fichas. Se envía por correo con tu nombre; la app no puede investigar sola.</div>
+  <label>Tu nombre</label><input id="rq-name" placeholder="Para saber de quién es la solicitud" maxlength="30">
+  <label>Ticker o nombre</label><input id="rq-tk" placeholder="Por ejemplo: VOO, Rocket Lab, CETES" maxlength="40">
+  <label>Tipo</label><div class="opts" id="rq-tipo"><button class="opt on" data-v="Acción">Acción</button><button class="opt" data-v="ETF">ETF</button><button class="opt" data-v="Bono / deuda">Bono</button><button class="opt" data-v="Otro">Otro</button></div>
+  <label>Qué quieres entender (opcional)</label><textarea id="rq-q" placeholder="¿Por qué sube tanto? ¿Sirve para ahorro de largo plazo? ¿Qué riesgo tiene?"></textarea>
+  <div class="out" id="rq-out"></div>
+  <div class="actions"><button class="btn" id="rq-mail">Enviar solicitud por correo</button></div>
+  <div class="actions"><button class="btn ghost" id="rq-copy">Copiar</button><button class="btn ghost" id="rq-share">Compartir</button><button class="btn ghost" id="rq-save">Guardar pendiente</button></div>
+</div></div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><h3 id="s-t"></h3><p id="s-b"></p></div>
+
+<nav>
+  <button data-v="cartera" class="on"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>Cartera</button>
+  <button data-v="semana"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Semana</button>
+  <button data-v="ref"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-4 3-6.5 7-6.5s7 2.5 7 6.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M16 13.5c3.5 0 6 2 6 5.5"/></svg>Referentes</button>
+  <button data-v="fichas"><svg viewBox="0 0 24 24"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5M9 13h7M9 17h7"/></svg>Fichas</button>
+  <button data-v="aprende"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21z"/><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20"/></svg>Aprende</button>
+</nav>
+
+<script>
+/* ================== CONFIGURACIÓN ================== */
+const SHEET_ID = '14oNmr0B6OLgOPKaGgcBi6Pr0JZpmp3YwzjfDs9m7Wis';
+const SHEET_URLS = [
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`,
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`
+];
+const SNAPSHOT_DATE = '17 sep 2026, cierre';
+const REQ_EMAIL = 'dr.alejandrocortes@gmail.com';
+const SNAPSHOT_CSV = "Ticker,Empresa,Estado,Simbolo,Precio,CambioPct,High52,Low52,PE,EPS,MarketCap,Beta,Volumen,CierreAyer,,,,\nASTS,AST SpaceMobile,Tengo,NASDAQ:ASTS,62.71,5.8,133.86,40.15,,-2.14,24404693568,2.74,9212961,59.27,,,,\nSMR,NuScale Power,Tengo,NYSE:SMR,9.04,8.92,57.42,7.21,,-2.92,3884697711,2.3,49346310,8.3,,,,\nCOST,Costco Wholesale,Tengo,NASDAQ:COST,893.93,0.02,1096.5,844.06,44.96,19.88,396439000435,0.86,2322546,893.74,,,,\nRACE,Ferrari,Tengo,NYSE:RACE,414,0.4,504.49,312.51,,,77964852600,0.92,343429,412.34,,,,\nBABA,Alibaba,Tengo,NYSE:BABA,108.54,1.18,192.67,91.99,23.92,4.54,2182122002736,0.79,8725550,107.27,,,,\nNVDA,Nvidia,Sigo,NASDAQ:NVDA,219.34,2.54,236.54,164.27,27.73,7.91,5286093911743,2.22,94191263,213.9,,,,\nMETA,Meta Platforms,Sigo,NASDAQ:META,682.31,1.34,790.8,520.26,25.69,26.56,1738188130330,1.25,15927993,673.31,,,,\nNU,Nu Holdings,Sigo,NYSE:NU,13.84,0.22,18.98,11.2,18.84,0.73,66856722657,0.94,90742409,13.81,,,,\nEL,Est\u00e9e Lauder,Sigo,NYSE:EL,93.86,-1.82,121.64,66.22,146.32,0.64,33958407430,1.28,2293053,95.6,,,,\nSPX,S&P 500,Indice,INDEXSP:.INX,7637.76,1.14,,,,,,,,,,,,\nIXIC,Nasdaq,Indice,INDEXNASDAQ:.IXIC,26418.3,1.69,,,,,,,,,,,,\nUSDMXN,Dolar/Peso,Divisa,CURRENCY:USDMXN,17.159,,,,,,,,,,,,,\n,,,,,,,,,,,,,,,,,\nHISTORICO,No editar: la app Radar lee esta hoja,,,,,,,,,,,,,,,,\nASTS,,SMR,,COST,,RACE,,BABA,,NVDA,,META,,NU,,EL,\nDate,Close,Date,Close,Date,Close,Date,Close,Date,Close,Date,Close,Date,Close,Date,Close,Date,Close\n11/5/2026 16:00:00,82.55,11/5/2026 16:00:00,13.29,11/5/2026 16:00:00,999.47,11/5/2026 16:00:00,329.26,11/5/2026 16:00:00,137.3,11/5/2026 16:00:00,219.44,11/5/2026 16:00:00,598.86,11/5/2026 16:00:00,13.5,11/5/2026 16:00:00,82.75\n12/5/2026 16:00:00,72.96,12/5/2026 16:00:00,12,12/5/2026 16:00:00,1021.88,12/5/2026 16:00:00,329.26,12/5/2026 16:00:00,134.78,12/5/2026 16:00:00,220.78,12/5/2026 16:00:00,603,12/5/2026 16:00:00,13.27,12/5/2026 16:00:00,84.89\n13/5/2026 16:00:00,74.81,13/5/2026 16:00:00,11.96,13/5/2026 16:00:00,1033.08,13/5/2026 16:00:00,333.09,13/5/2026 16:00:00,145.81,13/5/2026 16:00:00,225.83,13/5/2026 16:00:00,616.63,13/5/2026 16:00:00,12.82,13/5/2026 16:00:00,82.13\n14/5/2026 16:00:00,83.01,14/5/2026 16:00:00,12.06,14/5/2026 16:00:00,1041.25,14/5/2026 16:00:00,332.21,14/5/2026 16:00:00,141.12,14/5/2026 16:00:00,235.74,14/5/2026 16:00:00,618.43,14/5/2026 16:00:00,12.93,14/5/2026 16:00:00,80.83\n15/5/2026 16:00:00,83.67,15/5/2026 16:00:00,11.23,15/5/2026 16:00:00,1048.95,15/5/2026 16:00:00,321.2,15/5/2026 16:00:00,132.59,15/5/2026 16:00:00,225.32,15/5/2026 16:00:00,614.23,15/5/2026 16:00:00,12.19,15/5/2026 16:00:00,80.28\n18/5/2026 16:00:00,86.83,18/5/2026 16:00:00,10.48,18/5/2026 16:00:00,1076.47,18/5/2026 16:00:00,324.77,18/5/2026 16:00:00,133.26,18/5/2026 16:00:00,222.32,18/5/2026 16:00:00,611.21,18/5/2026 16:00:00,12.29,18/5/2026 16:00:00,80.01\n19/5/2026 16:00:00,88.1,19/5/2026 16:00:00,10.06,19/5/2026 16:00:00,1094.32,19/5/2026 16:00:00,329.66,19/5/2026 16:00:00,135.64,19/5/2026 16:00:00,220.61,19/5/2026 16:00:00,602.61,19/5/2026 16:00:00,12.29,19/5/2026 16:00:00,76.14\n20/5/2026 16:00:00,89.58,20/5/2026 16:00:00,10.39,20/5/2026 16:00:00,1074.01,20/5/2026 16:00:00,341.81,20/5/2026 16:00:00,134.47,20/5/2026 16:00:00,223.47,20/5/2026 16:00:00,605.06,20/5/2026 16:00:00,12.79,20/5/2026 16:00:00,78.2\n21/5/2026 16:00:00,96.23,21/5/2026 16:00:00,11.33,21/5/2026 16:00:00,1050.45,21/5/2026 16:00:00,349.39,21/5/2026 16:00:00,131.47,21/5/2026 16:00:00,219.51,21/5/2026 16:00:00,607.38,21/5/2026 16:00:00,13.16,21/5/2026 16:00:00,78.91\n22/5/2026 16:00:00,105.86,22/5/2026 16:00:00,11.4,22/5/2026 16:00:00,1028.24,22/5/2026 16:00:00,348.24,22/5/2026 16:00:00,130,22/5/2026 16:00:00,215.33,22/5/2026 16:00:00,610.26,22/5/2026 16:00:00,12.73,22/5/2026 16:00:00,88.32\n26/5/2026 16:00:00,119.7,26/5/2026 16:00:00,12.22,26/5/2026 16:00:00,1002.93,26/5/2026 16:00:00,329.91,26/5/2026 16:00:00,129.47,26/5/2026 16:00:00,214.86,26/5/2026 16:00:00,612.34,26/5/2026 16:00:00,12.98,26/5/2026 16:00:00,86.6\n27/5/2026 16:00:00,129.6,27/5/2026 16:00:00,12.07,27/5/2026 16:00:00,1003.69,27/5/2026 16:00:00,333.22,27/5/2026 16:00:00,127.76,27/5/2026 16:00:00,212.6,27/5/2026 16:00:00,635.26,27/5/2026 16:00:00,13.03,27/5/2026 16:00:00,91.2\n28/5/2026 16:00:00,133.09,28/5/2026 16:00:00,12.19,28/5/2026 16:00:00,995.2,28/5/2026 16:00:00,346.35,28/5/2026 16:00:00,126.16,28/5/2026 16:00:00,214.25,28/5/2026 16:00:00,635.29,28/5/2026 16:00:00,13.05,28/5/2026 16:00:00,90.87\n29/5/2026 16:00:00,113.41,29/5/2026 16:00:00,12.67,29/5/2026 16:00:00,956.32,29/5/2026 16:00:00,340.23,29/5/2026 16:00:00,124.22,29/5/2026 16:00:00,211.14,29/5/2026 16:00:00,632.51,29/5/2026 16:00:00,13.13,29/5/2026 16:00:00,88.95\n1/6/2026 16:00:00,105.65,1/6/2026 16:00:00,12.89,1/6/2026 16:00:00,946.11,1/6/2026 16:00:00,349.24,1/6/2026 16:00:00,125.4,1/6/2026 16:00:00,224.36,1/6/2026 16:00:00,600.47,1/6/2026 16:00:00,12.99,1/6/2026 16:00:00,85.58\n2/6/2026 16:00:00,118.17,2/6/2026 16:00:00,13.95,2/6/2026 16:00:00,954.27,2/6/2026 16:00:00,353.81,2/6/2026 16:00:00,130.82,2/6/2026 16:00:00,222.82,2/6/2026 16:00:00,597.63,2/6/2026 16:00:00,11.93,2/6/2026 16:00:00,83.41\n3/6/2026 16:00:00,107.73,3/6/2026 16:00:00,12.27,3/6/2026 16:00:00,961.83,3/6/2026 16:00:00,344.4,3/6/2026 16:00:00,127.21,3/6/2026 16:00:00,214.75,3/6/2026 16:00:00,622.98,3/6/2026 16:00:00,11.64,3/6/2026 16:00:00,82.05\n4/6/2026 16:00:00,107.29,4/6/2026 16:00:00,12,4/6/2026 16:00:00,972.35,4/6/2026 16:00:00,349.92,4/6/2026 16:00:00,125.95,4/6/2026 16:00:00,218.66,4/6/2026 16:00:00,627.57,4/6/2026 16:00:00,12.12,4/6/2026 16:00:00,82.9\n5/6/2026 16:00:00,93.6,5/6/2026 16:00:00,10.5,5/6/2026 16:00:00,971.87,5/6/2026 16:00:00,346.99,5/6/2026 16:00:00,121.06,5/6/2026 16:00:00,205.1,5/6/2026 16:00:00,593,5/6/2026 16:00:00,11.97,5/6/2026 16:00:00,83.49\n8/6/2026 16:00:00,92.06,8/6/2026 16:00:00,10.76,8/6/2026 16:00:00,974.75,8/6/2026 16:00:00,351.57,8/6/2026 16:00:00,120.07,8/6/2026 16:00:00,208.64,8/6/2026 16:00:00,585.39,8/6/2026 16:00:00,11.6,8/6/2026 16:00:00,84.64\n9/6/2026 16:00:00,88.71,9/6/2026 16:00:00,10,9/6/2026 16:00:00,968.59,9/6/2026 16:00:00,357.52,9/6/2026 16:00:00,119.7,9/6/2026 16:00:00,208.19,9/6/2026 16:00:00,584.59,9/6/2026 16:00:00,11.88,9/6/2026 16:00:00,86.56\n10/6/2026 16:00:00,87.32,10/6/2026 16:00:00,9.29,10/6/2026 16:00:00,983.37,10/6/2026 16:00:00,346.56,10/6/2026 16:00:00,115.38,10/6/2026 16:00:00,200.42,10/6/2026 16:00:00,570.98,10/6/2026 16:00:00,11.62,10/6/2026 16:00:00,85.39\n11/6/2026 16:00:00,97.56,11/6/2026 16:00:00,9.57,11/6/2026 16:00:00,975.69,11/6/2026 16:00:00,365.62,11/6/2026 16:00:00,112.69,11/6/2026 16:00:00,204.87,11/6/2026 16:00:00,568.43,11/6/2026 16:00:00,12.09,11/6/2026 16:00:00,88.02\n12/6/2026 16:00:00,82.41,12/6/2026 16:00:00,9.89,12/6/2026 16:00:00,982.35,12/6/2026 16:00:00,354.91,12/6/2026 16:00:00,112.82,12/6/2026 16:00:00,205.19,12/6/2026 16:00:00,566.98,12/6/2026 16:00:00,12.19,12/6/2026 16:00:00,89.68\n15/6/2026 16:00:00,87.57,15/6/2026 16:00:00,10.64,15/6/2026 16:00:00,979.45,15/6/2026 16:00:00,369.06,15/6/2026 16:00:00,112.55,15/6/2026 16:00:00,212.45,15/6/2026 16:00:00,593.48,15/6/2026 16:00:00,12.43,15/6/2026 16:00:00,90\n16/6/2026 16:00:00,82.25,16/6/2026 16:00:00,9.89,16/6/2026 16:00:00,986.68,16/6/2026 16:00:00,366.13,16/6/2026 16:00:00,110.97,16/6/2026 16:00:00,207.41,16/6/2026 16:00:00,600.21,16/6/2026 16:00:00,12.72,16/6/2026 16:00:00,87.58\n17/6/2026 16:00:00,85.43,17/6/2026 16:00:00,10.34,17/6/2026 16:00:00,965.59,17/6/2026 16:00:00,354.28,17/6/2026 16:00:00,107.44,17/6/2026 16:00:00,204.65,17/6/2026 16:00:00,567.58,17/6/2026 16:00:00,12.89,17/6/2026 16:00:00,82.46\n18/6/2026 16:00:00,80.66,18/6/2026 16:00:00,11.74,18/6/2026 16:00:00,951.45,18/6/2026 16:00:00,362.13,18/6/2026 16:00:00,107.1,18/6/2026 16:00:00,210.69,18/6/2026 16:00:00,577.22,18/6/2026 16:00:00,12.71,18/6/2026 16:00:00,84.81\n22/6/2026 16:00:00,73.19,22/6/2026 16:00:00,11.24,22/6/2026 16:00:00,951.35,22/6/2026 16:00:00,348.42,22/6/2026 16:00:00,104.97,22/6/2026 16:00:00,208.65,22/6/2026 16:00:00,563.85,22/6/2026 16:00:00,12.79,22/6/2026 16:00:00,84.53\n23/6/2026 16:00:00,72.87,23/6/2026 16:00:00,10.86,23/6/2026 16:00:00,957.68,23/6/2026 16:00:00,344.87,23/6/2026 16:00:00,102.6,23/6/2026 16:00:00,200.04,23/6/2026 16:00:00,562.2,23/6/2026 16:00:00,12.59,23/6/2026 16:00:00,83.76\n24/6/2026 16:00:00,68.01,24/6/2026 16:00:00,10.21,24/6/2026 16:00:00,961.09,24/6/2026 16:00:00,348.75,24/6/2026 16:00:00,99.8,24/6/2026 16:00:00,199,24/6/2026 16:00:00,557.67,24/6/2026 16:00:00,12.46,24/6/2026 16:00:00,83.27\n25/6/2026 16:00:00,65.62,25/6/2026 16:00:00,10.07,25/6/2026 16:00:00,942.24,25/6/2026 16:00:00,352.2,25/6/2026 16:00:00,95.07,25/6/2026 16:00:00,195.74,25/6/2026 16:00:00,542.87,25/6/2026 16:00:00,12.46,25/6/2026 16:00:00,81.5\n26/6/2026 16:00:00,71.45,26/6/2026 16:00:00,10.1,26/6/2026 16:00:00,952.54,26/6/2026 16:00:00,368.34,26/6/2026 16:00:00,94.81,26/6/2026 16:00:00,192.53,26/6/2026 16:00:00,550.25,26/6/2026 16:00:00,13.17,26/6/2026 16:00:00,80.54\n29/6/2026 16:00:00,86.77,29/6/2026 16:00:00,10.26,29/6/2026 16:00:00,946.68,29/6/2026 16:00:00,368.34,29/6/2026 16:00:00,95.51,29/6/2026 16:00:00,194.97,29/6/2026 16:00:00,562.6,29/6/2026 16:00:00,13.13,29/6/2026 16:00:00,79.37\n30/6/2026 16:00:00,88.86,30/6/2026 16:00:00,10.03,30/6/2026 16:00:00,935.47,30/6/2026 16:00:00,372.29,30/6/2026 16:00:00,95.98,30/6/2026 16:00:00,200.09,30/6/2026 16:00:00,563.29,30/6/2026 16:00:00,13.36,30/6/2026 16:00:00,78.95\n1/7/2026 16:00:00,86.1,1/7/2026 16:00:00,10.15,1/7/2026 16:00:00,924.67,1/7/2026 16:00:00,374.66,1/7/2026 16:00:00,97.99,1/7/2026 16:00:00,197.58,1/7/2026 16:00:00,612.91,1/7/2026 16:00:00,13.39,1/7/2026 16:00:00,82.47\n2/7/2026 16:00:00,85.13,2/7/2026 16:00:00,9.76,2/7/2026 16:00:00,951.67,2/7/2026 16:00:00,384.97,2/7/2026 16:00:00,96.14,2/7/2026 16:00:00,194.83,2/7/2026 16:00:00,582.9,2/7/2026 16:00:00,13.61,2/7/2026 16:00:00,83.71\n6/7/2026 16:00:00,80.64,6/7/2026 16:00:00,9.61,6/7/2026 16:00:00,950.25,6/7/2026 16:00:00,391.86,6/7/2026 16:00:00,97.91,6/7/2026 16:00:00,195.55,6/7/2026 16:00:00,600.29,6/7/2026 16:00:00,14.06,6/7/2026 16:00:00,84.9\n7/7/2026 16:00:00,74.21,7/7/2026 16:00:00,8.96,7/7/2026 16:00:00,947.5,7/7/2026 16:00:00,386.99,7/7/2026 16:00:00,98.14,7/7/2026 16:00:00,196.93,7/7/2026 16:00:00,615.58,7/7/2026 16:00:00,13.61,7/7/2026 16:00:00,84.44\n8/7/2026 16:00:00,74.95,8/7/2026 16:00:00,8.76,8/7/2026 16:00:00,953.13,8/7/2026 16:00:00,375.03,8/7/2026 16:00:00,108.98,8/7/2026 16:00:00,204.12,8/7/2026 16:00:00,603.12,8/7/2026 16:00:00,13.37,8/7/2026 16:00:00,81.8\n9/7/2026 16:00:00,73.88,9/7/2026 16:00:00,9.03,9/7/2026 16:00:00,912.97,9/7/2026 16:00:00,374.67,9/7/2026 16:00:00,111.14,9/7/2026 16:00:00,202.78,9/7/2026 16:00:00,631.48,9/7/2026 16:00:00,13.67,9/7/2026 16:00:00,81.99\n10/7/2026 16:00:00,73.32,10/7/2026 16:00:00,9.04,10/7/2026 16:00:00,916.25,10/7/2026 16:00:00,376.64,10/7/2026 16:00:00,112.33,10/7/2026 16:00:00,210.96,10/7/2026 16:00:00,669.21,10/7/2026 16:00:00,13.76,10/7/2026 16:00:00,82.66\n13/7/2026 16:00:00,67.58,13/7/2026 16:00:00,8.35,13/7/2026 16:00:00,926.43,13/7/2026 16:00:00,372.98,13/7/2026 16:00:00,112.35,13/7/2026 16:00:00,203.53,13/7/2026 16:00:00,656.73,13/7/2026 16:00:00,13.67,13/7/2026 16:00:00,81.15\n14/7/2026 16:00:00,68.82,14/7/2026 16:00:00,8.6,14/7/2026 16:00:00,921.75,14/7/2026 16:00:00,369.16,14/7/2026 16:00:00,112.32,14/7/2026 16:00:00,211.8,14/7/2026 16:00:00,661.04,14/7/2026 16:00:00,13.99,14/7/2026 16:00:00,80.86\n15/7/2026 16:00:00,66.31,15/7/2026 16:00:00,8.36,15/7/2026 16:00:00,916.54,15/7/2026 16:00:00,375.74,15/7/2026 16:00:00,117.69,15/7/2026 16:00:00,212.5,15/7/2026 16:00:00,681.31,15/7/2026 16:00:00,13.88,15/7/2026 16:00:00,82.31\n16/7/2026 16:00:00,55.01,16/7/2026 16:00:00,7.64,16/7/2026 16:00:00,945.57,16/7/2026 16:00:00,382.58,16/7/2026 16:00:00,117.49,16/7/2026 16:00:00,207.4,16/7/2026 16:00:00,664.54,16/7/2026 16:00:00,13.79,16/7/2026 16:00:00,82.84\n17/7/2026 16:00:00,57.8,17/7/2026 16:00:00,7.72,17/7/2026 16:00:00,940.87,17/7/2026 16:00:00,376.83,17/7/2026 16:00:00,114.97,17/7/2026 16:00:00,202.81,17/7/2026 16:00:00,646.01,17/7/2026 16:00:00,13.59,17/7/2026 16:00:00,82.13\n20/7/2026 16:00:00,57.42,20/7/2026 16:00:00,7.96,20/7/2026 16:00:00,935.8,20/7/2026 16:00:00,371.52,20/7/2026 16:00:00,120.34,20/7/2026 16:00:00,203.28,20/7/2026 16:00:00,645.85,20/7/2026 16:00:00,13.99,20/7/2026 16:00:00,83.64\n21/7/2026 16:00:00,63.34,21/7/2026 16:00:00,8.71,21/7/2026 16:00:00,929.22,21/7/2026 16:00:00,369.97,21/7/2026 16:00:00,117.97,21/7/2026 16:00:00,207.29,21/7/2026 16:00:00,643.81,21/7/2026 16:00:00,14.39,21/7/2026 16:00:00,82.37\n22/7/2026 16:00:00,61.95,22/7/2026 16:00:00,8.68,22/7/2026 16:00:00,927.31,22/7/2026 16:00:00,371.61,22/7/2026 16:00:00,116.56,22/7/2026 16:00:00,212.06,22/7/2026 16:00:00,627.17,22/7/2026 16:00:00,14.51,22/7/2026 16:00:00,82.63\n23/7/2026 16:00:00,59.18,23/7/2026 16:00:00,8.81,23/7/2026 16:00:00,926.06,23/7/2026 16:00:00,359.44,23/7/2026 16:00:00,114.06,23/7/2026 16:00:00,208.76,23/7/2026 16:00:00,606.1,23/7/2026 16:00:00,14.19,23/7/2026 16:00:00,79.92\n24/7/2026 16:00:00,56.2,24/7/2026 16:00:00,8.09,24/7/2026 16:00:00,935.03,24/7/2026 16:00:00,360.14,24/7/2026 16:00:00,112.14,24/7/2026 16:00:00,206.84,24/7/2026 16:00:00,595.19,24/7/2026 16:00:00,14.09,24/7/2026 16:00:00,80.29\n27/7/2026 16:00:00,58.29,27/7/2026 16:00:00,8.54,27/7/2026 16:00:00,951.58,27/7/2026 16:00:00,380.01,27/7/2026 16:00:00,115,27/7/2026 16:00:00,196.51,27/7/2026 16:00:00,593.87,27/7/2026 16:00:00,14.53,27/7/2026 16:00:00,83.2\n28/7/2026 16:00:00,56.55,28/7/2026 16:00:00,8.22,28/7/2026 16:00:00,966.58,28/7/2026 16:00:00,390.14,28/7/2026 16:00:00,115.19,28/7/2026 16:00:00,197.01,28/7/2026 16:00:00,593.41,28/7/2026 16:00:00,14.68,28/7/2026 16:00:00,84.75\n29/7/2026 16:00:00,53.03,29/7/2026 16:00:00,7.59,29/7/2026 16:00:00,974.03,29/7/2026 16:00:00,385.69,29/7/2026 16:00:00,115.03,29/7/2026 16:00:00,190.01,29/7/2026 16:00:00,585.61,29/7/2026 16:00:00,14.04,29/7/2026 16:00:00,84.13\n30/7/2026 16:00:00,58.44,30/7/2026 16:00:00,8.6,30/7/2026 16:00:00,954.17,30/7/2026 16:00:00,397.73,30/7/2026 16:00:00,116.32,30/7/2026 16:00:00,195.04,30/7/2026 16:00:00,539.03,30/7/2026 16:00:00,14.49,30/7/2026 16:00:00,84.88\n31/7/2026 16:00:00,58.98,31/7/2026 16:00:00,8.42,31/7/2026 16:00:00,951.89,31/7/2026 16:00:00,393.87,31/7/2026 16:00:00,122.25,31/7/2026 16:00:00,200.75,31/7/2026 16:00:00,556.71,31/7/2026 16:00:00,14.33,31/7/2026 16:00:00,83.9\n3/8/2026 16:00:00,63.52,3/8/2026 16:00:00,9.01,3/8/2026 16:00:00,954.08,3/8/2026 16:00:00,401.28,3/8/2026 16:00:00,127.3,3/8/2026 16:00:00,206.64,3/8/2026 16:00:00,590.24,3/8/2026 16:00:00,14.44,3/8/2026 16:00:00,84.68\n4/8/2026 16:00:00,70.31,4/8/2026 16:00:00,9.49,4/8/2026 16:00:00,947.85,4/8/2026 16:00:00,402.79,4/8/2026 16:00:00,128.99,4/8/2026 16:00:00,211.94,4/8/2026 16:00:00,587.94,4/8/2026 16:00:00,14.33,4/8/2026 16:00:00,86.97\n5/8/2026 16:00:00,68.38,5/8/2026 16:00:00,9.38,5/8/2026 16:00:00,941.99,5/8/2026 16:00:00,406.8,5/8/2026 16:00:00,128.53,5/8/2026 16:00:00,219.22,5/8/2026 16:00:00,588.77,5/8/2026 16:00:00,14.48,5/8/2026 16:00:00,86.96\n6/8/2026 16:00:00,67.36,6/8/2026 16:00:00,9.47,6/8/2026 16:00:00,949.15,6/8/2026 16:00:00,407.28,6/8/2026 16:00:00,126.81,6/8/2026 16:00:00,218.99,6/8/2026 16:00:00,589.9,6/8/2026 16:00:00,14.12,6/8/2026 16:00:00,85.49\n7/8/2026 16:00:00,71.94,7/8/2026 16:00:00,9.82,7/8/2026 16:00:00,947.82,7/8/2026 16:00:00,412.26,7/8/2026 16:00:00,128.41,7/8/2026 16:00:00,223.96,7/8/2026 16:00:00,592.1,7/8/2026 16:00:00,13.84,7/8/2026 16:00:00,88.35\n10/8/2026 16:00:00,68.76,10/8/2026 16:00:00,9.18,10/8/2026 16:00:00,952.75,10/8/2026 16:00:00,406.77,10/8/2026 16:00:00,132.32,10/8/2026 16:00:00,217.55,10/8/2026 16:00:00,594.92,10/8/2026 16:00:00,13.86,10/8/2026 16:00:00,87.19\n11/8/2026 16:00:00,71.63,11/8/2026 16:00:00,9.89,11/8/2026 16:00:00,944.32,11/8/2026 16:00:00,410.26,11/8/2026 16:00:00,127.85,11/8/2026 16:00:00,217.5,11/8/2026 16:00:00,599.12,11/8/2026 16:00:00,13.65,11/8/2026 16:00:00,87.78\n12/8/2026 16:00:00,74.31,12/8/2026 16:00:00,9.59,12/8/2026 16:00:00,949.58,12/8/2026 16:00:00,407.21,12/8/2026 16:00:00,125.22,12/8/2026 16:00:00,224.09,12/8/2026 16:00:00,578.85,12/8/2026 16:00:00,13.56,12/8/2026 16:00:00,87.68\n13/8/2026 16:00:00,71.52,13/8/2026 16:00:00,9.85,13/8/2026 16:00:00,961.85,13/8/2026 16:00:00,412.29,13/8/2026 16:00:00,122.16,13/8/2026 16:00:00,225.3,13/8/2026 16:00:00,594.97,13/8/2026 16:00:00,13.93,13/8/2026 16:00:00,87.32\n14/8/2026 16:00:00,70.98,14/8/2026 16:00:00,9.39,14/8/2026 16:00:00,961.1,14/8/2026 16:00:00,414.85,14/8/2026 16:00:00,123.81,14/8/2026 16:00:00,225.16,14/8/2026 16:00:00,589.85,14/8/2026 16:00:00,15.23,14/8/2026 16:00:00,86.1\n17/8/2026 16:00:00,71.14,17/8/2026 16:00:00,9.19,17/8/2026 16:00:00,953.5,17/8/2026 16:00:00,417.1,17/8/2026 16:00:00,124.71,17/8/2026 16:00:00,225.01,17/8/2026 16:00:00,568.97,17/8/2026 16:00:00,14.74,17/8/2026 16:00:00,84.34\n18/8/2026 16:00:00,67.07,18/8/2026 16:00:00,8.64,18/8/2026 16:00:00,961.35,18/8/2026 16:00:00,412.44,18/8/2026 16:00:00,128.15,18/8/2026 16:00:00,219.74,18/8/2026 16:00:00,543.67,18/8/2026 16:00:00,14.35,18/8/2026 16:00:00,84.27\n19/8/2026 16:00:00,66.43,19/8/2026 16:00:00,9.29,19/8/2026 16:00:00,956.99,19/8/2026 16:00:00,425.18,19/8/2026 16:00:00,128.9,19/8/2026 16:00:00,217.56,19/8/2026 16:00:00,546.03,19/8/2026 16:00:00,14.61,19/8/2026 16:00:00,98.01\n20/8/2026 16:00:00,65.06,20/8/2026 16:00:00,9.07,20/8/2026 16:00:00,933.51,20/8/2026 16:00:00,428.37,20/8/2026 16:00:00,130.53,20/8/2026 16:00:00,216.85,20/8/2026 16:00:00,545.83,20/8/2026 16:00:00,14.21,20/8/2026 16:00:00,96.15\n21/8/2026 16:00:00,68.65,21/8/2026 16:00:00,9.4,21/8/2026 16:00:00,947.74,21/8/2026 16:00:00,436.54,21/8/2026 16:00:00,119.34,21/8/2026 16:00:00,214.72,21/8/2026 16:00:00,549.9,21/8/2026 16:00:00,14.58,21/8/2026 16:00:00,101.94\n24/8/2026 16:00:00,62.35,24/8/2026 16:00:00,9.05,24/8/2026 16:00:00,971.4,24/8/2026 16:00:00,424.44,24/8/2026 16:00:00,118.47,24/8/2026 16:00:00,208.48,24/8/2026 16:00:00,559.02,24/8/2026 16:00:00,14.76,24/8/2026 16:00:00,104.13\n25/8/2026 16:00:00,62.01,25/8/2026 16:00:00,9.81,25/8/2026 16:00:00,960.01,25/8/2026 16:00:00,421.85,25/8/2026 16:00:00,119.44,25/8/2026 16:00:00,213.05,25/8/2026 16:00:00,570.05,25/8/2026 16:00:00,15.14,25/8/2026 16:00:00,104.85\n26/8/2026 16:00:00,59.88,26/8/2026 16:00:00,9.27,26/8/2026 16:00:00,956.12,26/8/2026 16:00:00,412.83,26/8/2026 16:00:00,119.83,26/8/2026 16:00:00,209.66,26/8/2026 16:00:00,576.14,26/8/2026 16:00:00,15.17,26/8/2026 16:00:00,105.06\n27/8/2026 16:00:00,61.44,27/8/2026 16:00:00,9.74,27/8/2026 16:00:00,934.66,27/8/2026 16:00:00,414.04,27/8/2026 16:00:00,116.31,27/8/2026 16:00:00,227.98,27/8/2026 16:00:00,571.1,27/8/2026 16:00:00,14.88,27/8/2026 16:00:00,106.21\n28/8/2026 16:00:00,58.05,28/8/2026 16:00:00,9.29,28/8/2026 16:00:00,945.47,28/8/2026 16:00:00,420.54,28/8/2026 16:00:00,118.9,28/8/2026 16:00:00,217.55,28/8/2026 16:00:00,578.02,28/8/2026 16:00:00,14.3,28/8/2026 16:00:00,103.39\n31/8/2026 16:00:00,59.1,31/8/2026 16:00:00,9.27,31/8/2026 16:00:00,943.89,31/8/2026 16:00:00,422.6,31/8/2026 16:00:00,114.02,31/8/2026 16:00:00,220.78,31/8/2026 16:00:00,572.34,31/8/2026 16:00:00,14.55,31/8/2026 16:00:00,102.3\n1/9/2026 16:00:00,55.8,1/9/2026 16:00:00,9.21,1/9/2026 16:00:00,939.96,1/9/2026 16:00:00,410.21,1/9/2026 16:00:00,112.85,1/9/2026 16:00:00,217.44,1/9/2026 16:00:00,578.54,1/9/2026 16:00:00,14.46,1/9/2026 16:00:00,100\n2/9/2026 16:00:00,62.4,2/9/2026 16:00:00,9.56,2/9/2026 16:00:00,928.48,2/9/2026 16:00:00,413.23,2/9/2026 16:00:00,111.81,2/9/2026 16:00:00,224.41,2/9/2026 16:00:00,592.85,2/9/2026 16:00:00,15.4,2/9/2026 16:00:00,101.15\n3/9/2026 16:00:00,62.13,3/9/2026 16:00:00,9.75,3/9/2026 16:00:00,925.41,3/9/2026 16:00:00,417.93,3/9/2026 16:00:00,111.81,3/9/2026 16:00:00,228.45,3/9/2026 16:00:00,610.68,3/9/2026 16:00:00,15.68,3/9/2026 16:00:00,100.86\n4/9/2026 16:00:00,62.31,4/9/2026 16:00:00,9.7,4/9/2026 16:00:00,915.74,4/9/2026 16:00:00,409.95,4/9/2026 16:00:00,113.24,4/9/2026 16:00:00,230.36,4/9/2026 16:00:00,616.77,4/9/2026 16:00:00,15.37,4/9/2026 16:00:00,103.86\n8/9/2026 16:00:00,66.12,8/9/2026 16:00:00,11.18,8/9/2026 16:00:00,910.18,8/9/2026 16:00:00,405.94,8/9/2026 16:00:00,112.66,8/9/2026 16:00:00,225.73,8/9/2026 16:00:00,613.48,8/9/2026 16:00:00,15.33,8/9/2026 16:00:00,101.69\n9/9/2026 16:00:00,62.42,9/9/2026 16:00:00,10.81,9/9/2026 16:00:00,902.6,9/9/2026 16:00:00,402.33,9/9/2026 16:00:00,109.4,9/9/2026 16:00:00,223.67,9/9/2026 16:00:00,653.69,9/9/2026 16:00:00,15,9/9/2026 16:00:00,98.77\n10/9/2026 16:00:00,59.91,10/9/2026 16:00:00,10.21,10/9/2026 16:00:00,902.38,10/9/2026 16:00:00,408.64,10/9/2026 16:00:00,108.56,10/9/2026 16:00:00,218.36,10/9/2026 16:00:00,644.38,10/9/2026 16:00:00,15.02,10/9/2026 16:00:00,96.47\n11/9/2026 16:00:00,59.86,11/9/2026 16:00:00,8.61,11/9/2026 16:00:00,904.77,11/9/2026 16:00:00,413.78,11/9/2026 16:00:00,109.3,11/9/2026 16:00:00,218.29,11/9/2026 16:00:00,648.03,11/9/2026 16:00:00,14.62,11/9/2026 16:00:00,97.12\n14/9/2026 16:00:00,60,14/9/2026 16:00:00,8.51,14/9/2026 16:00:00,918.91,14/9/2026 16:00:00,409.08,14/9/2026 16:00:00,109.23,14/9/2026 16:00:00,210.96,14/9/2026 16:00:00,665.6,14/9/2026 16:00:00,14.41,14/9/2026 16:00:00,98.22\n15/9/2026 16:00:00,58.77,15/9/2026 16:00:00,8.43,15/9/2026 16:00:00,901.35,15/9/2026 16:00:00,406.92,15/9/2026 16:00:00,109.34,15/9/2026 16:00:00,212.17,15/9/2026 16:00:00,670.24,15/9/2026 16:00:00,14.19,15/9/2026 16:00:00,96.25\n16/9/2026 16:00:00,59.27,16/9/2026 16:00:00,8.3,16/9/2026 16:00:00,893.74,16/9/2026 16:00:00,412.34,16/9/2026 16:00:00,107.27,16/9/2026 16:00:00,213.9,16/9/2026 16:00:00,673.31,16/9/2026 16:00:00,13.81,16/9/2026 16:00:00,95.6\n17/9/2026 16:00:00,62.71,17/9/2026 16:00:00,9.04,17/9/2026 16:00:00,893.93,17/9/2026 16:00:00,414,17/9/2026 16:00:00,108.54,17/9/2026 16:00:00,219.34,17/9/2026 16:00:00,682.31,17/9/2026 16:00:00,13.84,17/9/2026 16:00:00,93.86";
+
+/* ================== CONTENIDO ================== */
+const GLOS = {
+  pe:{t:'P/E (precio entre utilidad)',b:'Cuántos años de utilidades estás pagando por la empresa al precio de hoy. P/E 27 = pagas 27 dólares por cada dólar de ganancia anual. Alto no siempre es caro: si la empresa crece rápido, el múltiplo se "come" pronto. Sale vacío cuando la empresa pierde dinero.'},
+  eps:{t:'EPS (utilidad por acción)',b:'Las ganancias del último año divididas entre el número de acciones. Es el dato que más mueve el precio el día de resultados: arriba de lo esperado suele subir, abajo suele bajar. Negativo = la empresa pierde dinero.'},
+  beta:{t:'Beta',b:'Cuánto se mueve la acción respecto al mercado. Beta 1 = igual que el S&P 500. Beta 2.7 = si el mercado se mueve 1 %, esta tiende a moverse 2.7 %. Más beta, más emoción y más riesgo.'},
+  sma:{t:'Media móvil (SMA)',b:'El precio promedio de los últimos N días (20 o 50 aquí). Suaviza el ruido y muestra la tendencia. Precio arriba de la media = tendencia alcista de ese plazo; abajo = bajista. Muchos fondos miran estos niveles, por eso funcionan como referencia.'},
+  rsi:{t:'RSI (índice de fuerza relativa)',b:'Termómetro de 0 a 100 que mide si una acción subió o bajó "demasiado rápido" en 14 días. Arriba de 70 se considera sobrecomprada (puede descansar); abajo de 30, sobrevendida (puede rebotar). No es una orden de compra o venta, es una alerta.'},
+  h52:{t:'Máximo y mínimo de 52 semanas',b:'El precio más alto y más bajo del último año. Ver dónde está el precio dentro de ese rango dice mucho: cerca del máximo, el mercado está optimista; cerca del mínimo, castigada. "% desde el máximo" es cuánto tendría que subir para volver a su mejor momento.'},
+  mcap:{t:'Capitalización de mercado',b:'Lo que vale toda la empresa en bolsa: precio × número de acciones. Sirve para comparar tamaños: Nvidia vale más de 5 billones de dólares; NuScale, menos de 4 mil millones. A menor tamaño, mayor volatilidad, por lo general.'},
+  vol:{t:'Volumen',b:'Cuántas acciones cambiaron de manos hoy. Un movimiento con mucho volumen tiene más convicción que uno con poco. Cuando el precio rompe un nivel importante, mira el volumen: si es bajo, desconfía.'},
+  '13f':{t:'Formulario 13F',b:'Cada trimestre, los gestores con más de 100 millones de dólares en acciones de EE.UU. deben publicar lo que tenían al cierre, con hasta 45 días de retraso. La foto que ves es al 30 de junio; pudieron cambiar desde entonces. No muestra posiciones cortas ni acciones extranjeras.'},
+  dil:{t:'Dilución y programas ATM',b:'Cuando una empresa emite acciones nuevas para conseguir dinero, tu rebanada del pastel se hace más chica. Un programa "at-the-market" (ATM) le permite venderlas poco a poco en bolsa. Es normal en empresas que aún no generan caja, pero presiona el precio a la baja.'},
+  buyback:{t:'Recompra de acciones',b:'La empresa usa su dinero para comprar sus propias acciones y retirarlas. Quedan menos en circulación, así que tu porción del negocio crece sin que hagas nada. Es una forma de devolver dinero al accionista, alternativa al dividendo.'},
+  pt:{t:'Precio objetivo',b:'La estimación de un analista de cuánto debería valer la acción en 12 meses. Es una opinión, no una promesa. Sirve para ver hacia dónde apunta el consenso y notar cuando alguien se sale de él.'},
+  capex:{t:'Capex (gasto de capital)',b:'Dinero que la empresa invierte en activos de largo plazo: centros de datos, chips, fábricas. Hoy hunde la utilidad de Alibaba y Meta. La pregunta siempre es si ese gasto generará más ingresos de los que cuesta.'},
+  backlog:{t:'Backlog',b:'Contratos ya firmados que todavía no se han cobrado ni entregado. Son ingresos "en la fila", con más certeza que una proyección.'},
+  lockup:{t:'Lock-up',b:'Periodo, casi siempre 180 días tras una OPI, en que empleados y primeros inversionistas no pueden vender. Cuando vence suele llegar una ola de ventas. Fecha que conviene tener en el calendario antes de comprar algo recién listado.'},
+  adr:{t:'ADR',b:'Lo que compras en Nueva York de una empresa china no es la acción directa sino un "recibo" respaldado por acciones que cotizan en Hong Kong. Añade un riesgo extra: decisiones regulatorias de EE.UU. o China pueden afectar el recibo aunque el negocio vaya bien.'},
+  put:{t:'Opción put',b:'Contrato que da el derecho de vender una acción a un precio fijo. Sube de valor cuando la acción baja. Los fondos las usan para protegerse de una caída o para apostar directamente a ella.'},
+  f144:{t:'Form 144',b:'Aviso que un directivo presenta cuando planea vender acciones de su propia empresa. No siempre es mala señal (diversificar, pagar impuestos), pero cuando varios ejecutivos venden a la vez conviene tomar nota.'},
+  tasas:{t:'Tasas de interés',b:'Cuando la Fed sube la tasa, pedir prestado cuesta más y los bonos pagan mejor. Los inversionistas exigen entonces más rendimiento a las acciones, y las empresas que dependen de financiarse para crecer sufren más que las que ya generan mucha caja.'},
+  soporte:{t:'Soporte y resistencia',b:'Soporte: zona de precio donde la acción ha dejado de caer varias veces (hay compradores). Resistencia: zona donde ha dejado de subir (hay vendedores). Cuando rompe una de las dos con volumen, suele seguir en esa dirección un tiempo.'}
+};
+
+
+GLOS.costo={t:'Costo promedio',b:'Si compraste la misma acción varias veces a distintos precios, el costo promedio es lo que pagaste en total dividido entre las acciones que tienes. Es tu punto de equilibrio: arriba de él ganas, abajo pierdes.'};
+GLOS.rend={t:'Rendimiento',b:'La diferencia entre lo que valen hoy tus acciones y lo que pagaste por ellas. En porcentaje se calcula sobre el costo. Es "no realizado" mientras no vendas: puede cambiar mañana.'};
+GLOS.fx={t:'Tipo de cambio',b:'Las acciones de EE.UU. cotizan en dólares. Si las compras con pesos, tu rendimiento tiene dos partes: lo que hizo la acción y lo que hizo el peso frente al dólar. Por eso el mismo portafolio puede verse distinto en cada moneda.'};
+const EDICION = {
+  numero:2, semana:'14 – 21 de septiembre de 2026', fecha:'22 sep 2026',
+  concepto:{t:'Concepto de la semana: "comprar el rumor, vender la noticia"',b:'Meta subió 11 % el lunes ANTES de su conferencia Connect, solo porque un banco subió su precio objetivo. Costco lleva dos semanas bajando ANTES de sus resultados. El mercado se mueve con lo que espera, no con lo que ya pasó; por eso a veces una empresa reporta buenos números y la acción cae: la subida ya había ocurrido. Pregúntate siempre qué está descontado en el precio.'},
+  clima:[
+    '<b>La Fed subió la tasa 25 puntos base</b> (a 3.75–4.00 %), primera alza en tres años, y avisó que puede venir otra antes de fin de año. El bono a 10 años tocó 5 %, nivel que no se veía desde 2007. La semana cerró mixta: Dow −1.7 %, S&P −0.1 %, Nasdaq +0.7 %. <button class="i" data-def="tasas">i</button>',
+    '<b>El lunes 21 el mercado cambió de humor:</b> el petróleo cayó 4.5 % a 95.78 dólares por señales de diplomacia (Irán en la ONU, Arabia Saudita restaurando su oleoducto) y el Nasdaq cerró en récord (27,122, +2.3 %); el S&P +1.5 %. Bajó petróleo, bajaron los rendimientos, subió la tecnología.',
+    '<b>Números del entorno:</b> oro en 4,418 dólares, dólar (DXY) en 100, diésel en récord de 6.51 dólares por galón. La inflación por energía es la razón de que la Fed siga dura.',
+    '<b>Semana que viene:</b> conferencia Apsara de Alibaba (22–24), Meta Connect (23–24), resultados de Costco (24), inflación PCE (25) y reunión Trump–Xi.'
+  ],
+  tickers:{
+    ASTS:{pos:['+8 % en la semana','Pruebas con Vodafone, Orange, Telefónica y DT','Sector espacial de fiesta'],neg:['Insiders vendieron $450 M en 12 meses','Debajo de la SMA 200','Q2 quedó corto en ingresos'],notas:[
+      'Subió 5.8 % el lunes a 61.89 con todo el sector espacial (Rocket Lab +7 %, Intuitive Machines +10 %). Seis congresistas de EE.UU. declararon compras de SpaceX.',
+      'Amplía la colaboración con Vodafone, Orange, Telefónica, Deutsche Telekom y Vodafone Ucrania: pruebas de integración en 8 países europeos.',
+      'Dato incómodo: los directivos han vendido 450.8 millones de dólares netos en acciones en 12 meses. <button class="i" data-def="f144">i</button>',
+      'Consenso de 14 analistas: Mantener, objetivo promedio 79.61 (rango 42.50–108). Sigue debajo de su SMA 200 y cerca del piso del rango de 52 semanas.']},
+    SMR:{pos:['Rebote +7 % el lunes','Avance en sistema pasivo de enfriamiento','$1,900 M en caja'],neg:['Pedidos siguen sin ser firmes','Primeros reactores hasta inicios de 2030','Volatilidad de 75 % anual'],notas:[
+      'Tras la caída de la semana pasada por UBS, rebotó a 8.79–8.88. Produjo con MillenniTEK las primeras pastillas de óxido de boro para su sistema de enfriamiento de emergencia: un hito de fabricación, no de ventas.',
+      'Sus herramientas de IA (NPX, Nuclearn) recortan hasta 80 % el tiempo de búsqueda de datos de ingeniería.',
+      'Lo que no cambió: el backlog es en su mayoría no vinculante y los primeros reactores se esperan hasta inicios de la década de 2030. Sigue siendo una "acción de historia": gran promesa, estado de resultados feo. <button class="i" data-def="dil">i</button>',
+      'Consenso Mantener; objetivos entre 6 (UBS) y 14.']},
+    COST:{pos:['Ventas FY26 +10.2 % ($297,300 M)','Digital +20.7 %','Renovación de membresías 92.2 %'],neg:['P/E de 45 antes de resultados','−18 % desde el máximo','Cerró en 898 vs 905 hace una semana'],notas:[
+      '<b>Jueves 24 después del cierre: resultados del cuarto trimestre.</b> Se espera EPS de 6.48–6.55 (+10 %) e ingresos de 94,800 millones (+10 %). <button class="i" data-def="eps">i</button>',
+      'Qué mirar más allá del EPS: número de miembros, tasa de renovación (92.2 % en EE.UU./Canadá) y si anuncian dividendo especial.',
+      'Aviso educativo: Costco tiene historial de reportar bien y caer el mismo día porque el precio ya incorpora la perfección (36 analistas: 19 compra fuerte, 4 compra, 12 mantener, 1 venta fuerte; objetivo promedio 1,089).',
+      'Cerró la semana casi plano (898.48); el lunes subió 0.35 % pero quedó 1.9 puntos por debajo del Nasdaq.']},
+    RACE:{pos:['Recompra semanal: 53,717 acciones por €19.1 M','Milán +2.7 % el lunes','Consenso Compra moderada, objetivo $479'],neg:['P/E de 38: lo caro sigue caro'],notas:[
+      'Reporte del 21 de septiembre: entre el 14 y el 18 recompró 53,717 acciones (≈19.1 millones de euros); ya tiene 0.97 % de sus acciones en tesorería. <button class="i" data-def="buyback">i</button>',
+      'Semana tranquila: de 413.78 a 416.11 (+0.6 %). Rango 52 semanas 312–504.',
+      '18 analistas: 12 compra, 6 mantener, 0 venta; objetivo promedio 478.79 (17 % arriba). Rendimiento por dividendo 1.03 %.']},
+    BABA:{pos:['+5.9 % en la semana','20 GW de centros de datos para 2032','Chip propio Zhenwu V900'],neg:['Demanda colectiva (plazo 5 oct)','En Hong Kong sigue en tendencia bajista','Dilución reciente'],notas:[
+      'La mejor semana de tu cartera: de 109.30 a 115.75, y el martes abrió +3 % más. La conferencia Apsara (22–24 sep) trajo el anuncio de 20 gigavatios de centros de datos para 2032 y el chip Zhenwu V900.',
+      'Qwen (su modelo de IA) apareció en un despliegue relacionado con el gobierno de EE.UU. y nombraron nuevo jefe del equipo. BofA subió objetivo a 175 y Susquehanna a 190. <button class="i" data-def="pt">i</button>',
+      'El CFO vendió acciones para cubrir impuestos de acciones que le entregaron: no es señal.',
+      'Técnico en Hong Kong: tendencia bajista, RSI 46, soporte 105.10 HKD, resistencia 116.60. La demanda colectiva sigue con plazo el 5 de octubre. <button class="i" data-def="adr">i</button>']},
+    NVDA:{pos:['+4.1 % en la semana','Trimestre: ingresos $96,200 M, más del doble','Sobre SMA 20 y 50 otra vez'],neg:['La CFO vendió $7.65 M','Sigue el debate por frenar la IA'],notas:[
+      'De 218.29 a 227.16; el lunes +2.2 % con el Nasdaq en récord. Máximo de 52 semanas: 236.54.',
+      'Trimestre (reportado en agosto): ingresos 96,200 millones (más del doble que hace un año), EPS 2.22 vs 2.08 esperado; centros de datos 89,000 millones, 93 % de las ventas.',
+      'La CFO Colette Kress vendió 34,900 acciones (7.65 millones) el 17 de septiembre. Arista perdió contratos de Meta y Oracle frente a Nvidia. <button class="i" data-def="f144">i</button>',
+      'P/E ≈ 28, objetivo de consenso 342.74.']},
+    META:{pos:['+14 % en la semana, +11 % solo el lunes','Wells Fargo objetivo $796 (de $640)','Citi: $800 con "catalizador" en Connect'],neg:['Capex hasta $145,000 M; flujo libre cayó a $784 M','Amazon bloqueó a Muse de comprar en su tienda','Conviene recordar: subió antes de saber nada'],notas:[
+      'De 648 a 741.25: máximo desde febrero. Wells Fargo subió su objetivo antes de Connect, no después; los compradores apuestan a cifras de uso de Muse que Meta aún no ha publicado.',
+      'Connect 23–24 de septiembre: lentes de IA sin cámara (Luna), visor ligero Phoenix, y Muse como agente que ejecuta tareas. Las opciones descuentan un movimiento grande tras el evento.',
+      'Lo que importa de verdad es si la IA ya vende más anuncios: casi todo su ingreso es publicidad. Capex de hasta 145,000 millones este año y flujo libre de caja de solo 784 millones en el último trimestre. <button class="i" data-def="capex">i</button>',
+      'P/E 28; objetivo promedio 757 (ya por debajo del precio). Ex-dividendo el 21 de septiembre. Es el mejor ejemplo del concepto de la semana.']},
+    NU:{pos:['Rebote +3 % el lunes','P/E 19 vs mediana de 5 años de 33','Wolfe mantiene Outperform'],neg:['−3.8 % en la semana','Itaú BBA bajó a Neutral (objetivo 18)','Máximos cada vez más bajos desde 15.82'],notas:[
+      'De 14.62 a 14.06. Itaú BBA la bajó a Market Perform y recortó objetivo de 20 a 18 por el consumidor masivo brasileño y la inflación; Wolfe bajó objetivo de 18 a 17 pero mantiene Outperform.',
+      'El chart muestra consolidación: máximos descendentes desde 15.82, compradores apareciendo en 13.50–13.70 y nadie dispuesto a pagar arriba de 14 todavía. <button class="i" data-def="soporte">i</button>',
+      'Sigue debajo de su SMA 200. Primer Investor Day el 8 de diciembre en Nueva York.']},
+    EL:{pos:['+3.1 % el lunes','Ingresos trimestrales +6.8 % ($3,640 M)','Evercore: objetivo $115'],neg:['−0.8 % en la semana','Consenso Mantener','P/E de 197 sigue distorsionado'],notas:[
+      'De 97.12 a 96.34, con rebote el lunes al confirmarse ingresos trimestrales 2.7 % arriba de lo esperado. El martes abrió +4 %.',
+      '24 analistas: Mantener, objetivo promedio 104.67 (8.6 % arriba). Evercore es el optimista (115); Canaccord el cauto (90).',
+      'Recuerda que el P/E de casi 200 es por una utilidad deprimida; el P/E "normalizado" de Morningstar es 37. Próximos resultados a finales de octubre.']}
+  },
+  unicornio:{tk:'SPCX',nm:'SpaceX',px:'≈ $152 – 154',sub:'OPI el 12 de junio a $135 · cierre del día 1: $160.95 · capitalización ≈ 2 billones de dólares',
+    txt:'El unicornio más grande de la historia ya cotiza. Levantó 75,000 millones en la mayor OPI que ha existido, abrió a 150, cerró el primer día en 160.95 y hoy vale unas 2 billones de dólares (más que Tesla). Cohetes, Starlink, y el negocio de cómputo Colossus para xAI, por el que Google paga 920 millones al mes. Coatue (3,170 M), ARK (765 M), Tiger y Appaloosa la tienen en cartera.',
+    pos:['Starlink: ingreso recurrente global','Monopolio práctico en lanzamientos','Reportó ingresos mejores de lo esperado en su primer trimestre público'],neg:['Valuación de 2 billones sin historial público','Musk controla 82 % del voto con 42 % de las acciones','Lock-up: 180 días escalonados (desde diciembre) y 366 para insiders'],
+    fallar:'Que Starlink crezca más lento de lo que exige el precio; una falla de Starship; que la salida del lock-up en diciembre traiga una ola de ventas; y el riesgo de "hombre clave". <button class="i" data-def="lockup">i</button>',
+    observar:'Si sostiene la zona de 150 (mínimos de septiembre) y el primer vencimiento de lock-up en diciembre. Es un unicornio distinto: no es pequeña, es carísima y controlada por una sola persona.'},
+  seguir:{tk:'AMZN',nm:'Amazon',px:'≈ $254 – 258',sub:'59 analistas: 56 compra, 3 mantener · objetivo promedio $321 · 11 % debajo de su máximo (287.20)',
+    why:'La elegí porque es la número uno en recomendaciones de compra de todo Wall Street y, aun así, lleva un mes cayendo. Cuando el consenso dice "compra" y el precio dice "no tanto", hay algo que aprender.',
+    pos:['Ingresos trimestrales $200,600 M (+19.6 %); EPS 5.75 vs 1.82 esperado','AWS creció 36.7 % a $42,200 M, lo más rápido en 18 trimestres; capacidad 2027–2028 ya reservada','Su negocio de chips (Graviton, Trainium) pasa de $20,000 M anuales','Publicidad: un tercer motor de alto margen','Invierte $1,900 M en su red de repartidores; alianza con Kuehne+Nagel'],
+    neg:['Capex 2026 subido a $220,000 M: la mayor apuesta de la industria','Demanda por publicidad y bloqueo a los agentes de IA (incluido Muse): pelea abierta por el "comprador robot"','Recortes de personal continuos','Bridgewater redujo su posición 54 % en el trimestre; Dalio se fue a índices'],
+    fam:'Amazon es tres empresas: una tienda que gana poco, una nube que gana mucho (AWS) y una agencia de publicidad. Aprender a separar los tres negocios es aprender a leer un estado de resultados. Próximos resultados: finales de octubre. <button class="i" data-def="capex">i</button> <button class="i" data-def="consenso">i</button>'},
+  tecnico:{tk:'NVDA',txt:[
+    '<b>Cambió el cuadro:</b> hace una semana estaba debajo de la SMA 20 y hoy cerró en 227.16, arriba de la SMA 20 y de la SMA 50. La zona de resistencia 225–230 que marcamos la tocó el lunes; falta que cierre por encima de 230 para confirmar.',
+    '<b>Soporte nuevo:</b> 218–219 (la SMA 20 y el cierre del viernes). Si lo pierde, volvemos a 209.',
+    '<b>Techo:</b> 236.54, el máximo de 52 semanas. Entre 230 y 236 hay poco aire.',
+    '<b>Bono: META.</b> Un gap alcista de 665 a 741 en un día con volumen enorme. Los gaps así suelen "probarse" después: si Connect decepciona, el hueco entre 680 y 700 es el primer lugar donde buscaría soporte. <button class="i" data-def="sma">i</button>']},
+  calendario:[['22–24 sep','BABA: conferencia Apsara (IA, nube, chips)'],['23 sep','META: keynote de Connect, 4 pm hora del Pacífico'],['24 sep','COST: resultados del cuarto trimestre, tras el cierre'],['25 sep','Inflación PCE de agosto (dato favorito de la Fed)'],['5 oct','BABA: plazo de la demanda colectiva'],['Fin oct','GOOGL, META, AMZN, EL: resultados'],['~16 nov','13F del tercer trimestre'],['8 dic','NU: Investor Day']],
+  fuentes:'Mercado: CNBC, Yahoo Finance, First Financial Trust, Investrade (21 sep) · ASTS: GuruFocus, TradingView, 24/7 Wall St, Stocktitan · SMR: Yahoo/Simply Wall St, StocksToTrade · COST: Zacks, TradingKey, Ad hoc news · RACE: TipRanks, Stocktitan (6-K), MarketBeat · BABA: CNBC, MarketBeat, StocksToTrade · NVDA: Investing.com, StockAnalysis · META: StockAnalysis, 24/7 Wall St, TradingKey · NU: GuruFocus, StocksToTrade · EL: Ad hoc news, GuruFocus · SPCX: Wikipedia (OPI), MarketBeat, Investing.com · AMZN: Ad hoc news/MarketBeat, Investing.com, Morningstar · Referentes: BBAE, Holdingschannel, InsiderEdges.'
+};
+
+const REFS = [
+  {id:'buffett',n:'Buffett',h:'Warren Buffett · Berkshire Hathaway',kv:[['Cartera','≈ $299,000 M en 27–29 acciones; las 5 mayores son 72 %'],['Top 5','Apple 22 %, American Express 17 %, Coca-Cola 11 %, Alphabet 9.4 %, Bank of America 9.2 %']],
+   buy:'Alphabet (+83 %, ya es su tercera posición), Delta (+44 %), Lennar, Macy\'s, New York Times, D.R. Horton.',sell:'Bank of America (−6 %), Capital One (−58 %), DaVita, Kroger, Ally. Recompró $4,530 M de sus propias acciones.',
+   les:'El inversionista más famoso en "no entender la tecnología" tiene hoy a Alphabet como tercera posición.'},
+  {id:'ackman',n:'Ackman',h:'Bill Ackman · Pershing Square',kv:[['Cartera','$19,470 M en 14 posiciones; la firma ya cotiza (PS)'],['Top 5','Uber 12.7 %, Brookfield 12.6 %, Microsoft 11.9 %, Amazon 10.5 %, Howard Hughes 10.2 %']],
+   buy:'Nuevas: Visa, Mastercard, S&P Global, Netflix. Aumentó Howard Hughes (+48 %), Meta (+20 %), Uber (+15 %).',sell:'Salió de Alphabet y de Universal Music. Recortó Amazon 25 %.',
+   les:'Buffett compra Alphabet mientras Ackman la vende. Por eso conviene entender la empresa y no copiar carteras.'},
+  {id:'druck',n:'Druckenmiller',h:'Stanley Druckenmiller · Duquesne',kv:[],
+   buy:'Nuevas: Fox, CDW, Bitdeer, Delta, Fluor. Volvió a comprar Alphabet.',sell:'',
+   les:'Estilo macro y rotación rápida: sus posiciones duran meses, no décadas. Puede haber cambiado desde junio.'},
+  {id:'tepper',n:'Tepper',h:'David Tepper · Appaloosa',kv:[['Cartera','$7,730 M en 27 posiciones; 97 % acciones, 3 % puts'],['Top 5','Amazon 15.4 %, Micron 14.6 %, TSMC 10.2 %, Alphabet 8.5 %, Uber 7.2 %']],
+   buy:'Meta (+55 %), Baidu (+87 %), Vistra. Nuevas: Boeing, American Airlines y puts sobre Apple. <button class="i" data-def="put">ⓘ</button>',sell:'Micron (−41 %), Alibaba (−42 %), AMD (−11 %).',les:''},
+  {id:'wood',n:'Cathie Wood',h:'Cathie Wood · ARK Invest',kv:[['Cartera','$15,400 M en ≈191 posiciones'],['Top 5','Tesla 7.5 %, AMD 5.3 %, SpaceX 5.0 %, Tempus AI 3.8 %, Robinhood 3.4 %']],
+   buy:'Nuevas: SpaceX ($765 M) y Cerebras. Aumentó Tempus, Alphabet, Amazon, Roblox, Nvidia. Esta semana compra Meta y Rocket Lab.',sell:'AMD (−48 %), Tesla, Robinhood, CRISPR, Teradyne.',
+   les:'Referencia para innovación de alto riesgo: sirve para descubrir empresas, no para copiar pesos.'},
+  {id:'tiger',n:'Tiger Global',h:'Chase Coleman · Tiger Global',kv:[],buy:'Aparece con SpaceX (64 M) desde la OPI.',sell:'Recortó Alphabet 45 % (cuando Berkshire la compraba) y vendió TSMC mientras Appaloosa y Druckenmiller la compraban.',les:'Otro caso de expertos en direcciones contrarias; conviene entender la empresa y no copiar carteras.'},
+  {id:'burry',n:'Burry',h:'Michael Burry · Scion (cerrado)',kv:[],buy:'',sell:'',
+   les:'Ya no hay 13F: liquidó sus fondos y dio de baja a Scion en noviembre de 2025. Su último reporte tenía puts sobre Palantir y Nvidia. Hoy solo publica en su boletín. Sirve como contrapeso pesimista sobre la IA.'},
+  {id:'dalio',n:'Dalio',h:'Ray Dalio · Bridgewater',kv:[['Cartera','$24,380 M en 997 posiciones (+8.8 % en el trimestre); las 5 mayores son solo 33 %'],['Top 5','SPY 16.3 %, IVV 9.2 %, Nvidia 3.2 %, Broadcom 2.0 %, Amazon 2.0 %']],
+   buy:'Más índice S&P 500 (SPY +22 %, IVV +12 %), ETFs de Corea, emergentes y México, y utilities (Eversource, Con Edison, Duke).',sell:'Amazon (−54 %), Alphabet (−34 %), Broadcom (−28 %), Nvidia (−18 %); salió de Cisco, Palantir y CoreWeave.',
+   les:'Lección: el fondo de cobertura más grande del mundo tiene la cuarta parte de su cartera en dos ETFs del S&P 500. La diversificación barata no es solo para principiantes.'},
+  {id:'icahn',n:'Icahn',h:'Carl Icahn · Icahn Enterprises',kv:[],buy:'',sell:'',les:'<span class="pend">Pendiente: presentó su 13F el 14 de agosto; no revisé sus movimientos. Prefiero dejarlo en blanco a inventarlo.</span>'},
+  {id:'coatue',n:'Coatue',h:'Philippe Laffont · Coatue',kv:[['Top 5','TSMC 4,260 M, Lam Research 4,090 M, Micron 3,630 M, SpaceX 3,170 M, Applied Materials 3,050 M']],
+   buy:'Micron: de 166 mil a 3.14 millones de acciones (+1,800 %). Nuevas: Intel (1,690 M), Cerebras (1,550 M), Forgent Power (1,150 M), Hut 8. Amazon +49 %, Microsoft +18 %.',sell:'ASML (−41 %), Applied Materials (−20 %), Meta (−10 %). Nvidia bajó al lugar 15 de su cartera.',
+   les:'Lección: Coatue apostó a la cadena de suministro de la IA (memorias, equipos para fábricas) más que a Nvidia. Y compró Micron el mismo trimestre en que Tepper vendió 41 %: dos expertos, lectura opuesta.'},
+];
+const FICHAS=[
+ {tk:'ONON',nm:'On Holding (tenis On)',fecha:'22 sep 2026',px:'≈ $30 (+9 % hoy) · cerró ayer en $27.32',sub:'28 analistas: 23 compra, 4 mantener, 1 venta · objetivo promedio ≈ $45 (pero bajando) · −40 % en 2026 · capitalización ≈ $10,000 M',
+  pos:[
+   ['Crecimiento','Ventas del segundo trimestre CHF 850 M, +21.6 % a moneda constante. Guía 2026: crecimiento "low-20s". Pocas marcas de consumo crecen a ese ritmo con este tamaño.'],
+   ['Margen de lujo','Margen bruto 65.4 % (Nike anda cerca de 45 %). Guía subida a "65 % o más". Cobra caro y la gente paga. <button class="i" data-def="margen">i</button>'],
+   ['Venta directa','La venta directa al consumidor (tienda propia y web) creció 34 % y ya es 45.7 % del total. Es el canal donde más gana y donde controla su marca.'],
+   ['Plan a 2029','Investor Day de hoy: ventas de al menos CHF 5,600 M en 2029 (casi el doble), crecimiento anual de "high-teens", entrada a futbol (fichó a Mbappé) y golf.'],
+   ['Primera recompra','Autorizó recomprar hasta $1,000 M de acciones hasta 2029: primera vez en su historia. Es decir la empresa dice "estamos baratos". <button class="i" data-def="buyback">i</button>'],
+   ['Insiders compran','Directivos compraron $10.6 M netos en 12 meses (vs $1 M vendido). Tesorería: CHF 1,270 M en caja contra 747 M de deuda.']
+  ],
+  neg:[
+   ['Mayorista débil','El 11 de agosto cayó 19 % en un día: las ventas a tiendas de terceros en EE.UU. se frenaron. La empresa dice que fue a propósito (para no rematar), el mercado no le creyó del todo.'],
+   ['Inventario','Subió 31 %. Explicable por volumen y tipo de cambio, pero si las ventas mayoristas siguen flojas, el inventario se convierte en descuentos y descuentos en menor margen.'],
+   ['Objetivos a la baja','En dos semanas: Guggenheim 51→42, BofA 46→43, Williams Trading 32→27. Siguen en compra, pero cada vez más cerca del precio. <button class="i" data-def="pt">i</button>'],
+   ['Moneda y aranceles','Reporta en francos suizos y fabrica en Asia. Un franco fuerte y los aranceles de EE.UU. le pegan a los márgenes aunque venda bien.'],
+   ['Valuación','Aun tras caer 40 %, cotiza a unas 30 veces utilidades: sigue pagando crecimiento. Si crece 17 % y no 22 %, el múltiplo se ajusta. <button class="i" data-def="pe">i</button>'],
+   ['Volatilidad','Beta alrededor de 1.5–2 y movimientos de 19 % en un día. No es una acción tranquila.']
+  ],
+  des:[
+   'On es una marca suiza de tenis de correr fundada en 2010 por un triatleta (Olivier Bernhard) con Roger Federer como inversionista. Su tecnología CloudTec y su precio alto la pusieron entre Nike y Lululemon: crece como una marca joven y gana como una de lujo.',
+   'La historia de 2026 tiene dos caras. La empresa cumple: ventas +20 %, margen récord, venta directa disparada. Pero el mercado había pagado por perfección (P/E de 50–70 el año pasado) y el freno en el canal mayorista de EE.UU. rompió la narrativa: la acción pasó de 51 a 27 sin que el negocio empeorara.',
+   'Hoy la empresa respondió con un plan a 2029, su primera recompra y dos deportes nuevos. El mercado subió 9 %. La pregunta para los próximos trimestres es simple: ¿el mayorista se estabiliza (resultados del 17 de noviembre, crecimiento esperado ~17 %) o la venta directa tiene que cargar con todo?'
+  ],
+  lesson:'<b>Qué aprendemos con On:</b> una empresa puede crecer 20 % y su acción caer 40 % en el mismo año. El precio no responde a lo que pasa, sino a lo que pasa comparado con lo que se esperaba. Cuando pagas un múltiplo alto, compras expectativas; si las expectativas bajan de "excelente" a "muy bueno", pierdes dinero con una buena empresa. Segunda lección: mira los canales, no solo el total. Aquí la venta directa crece 34 % y el mayorista se frena, y esa diferencia explica todo el año.'},
+ {tk:'GOOGL',nm:'Alphabet (Google)',fecha:'17 sep 2026',px:'$342.87',sub:'Consenso: Compra fuerte · objetivo promedio ≈ $427 · próximos resultados 28 oct',
+  pos:[
+   ['Crecimiento','Ingresos del segundo trimestre +24 %; Búsqueda +17 %, YouTube +13 %. El negocio "viejo" sigue creciendo pese al miedo a que la IA lo mate.'],
+   ['Nube','Google Cloud +82 % y su utilidad operativa se triplicó. Backlog de $514,000 M. <button class="i" data-def="backlog">ⓘ</button>'],
+   ['Chips propios','Sus TPU ya se venden fuera de casa: Crux AI (con Blackstone) consiguió $22,000 M de 10 bancos para comprarlos.'],
+   ['Riesgo legal','Un juez ordenó reformas en publicidad en lugar de partir la empresa: se quitó el peor escenario.'],
+   ['Devuelve dinero','Paga dividendo (0.22 por trimestre) y recompra acciones. <button class="i" data-def="buyback">ⓘ</button>'],
+   ['Quién la compra','Buffett (+83 %, ya es su tercera posición), Druckenmiller, Tepper y Cathie Wood aumentaron en el segundo trimestre.']
+  ],
+  neg:[
+   ['Capex','$195,000–205,000 M en 2026, la mayor apuesta de gasto de su historia. Si la demanda de IA se enfría, pesa años. <button class="i" data-def="capex">ⓘ</button>'],
+   ['Competencia','Las OPIs esperadas de OpenAI y Anthropic traerían rivales con mucho capital; Meta podría superar a Google Search en ingresos por anuncios.'],
+   ['Quién la vende','Ackman salió por completo y Tiger Global recortó 45 % en el mismo trimestre en que Buffett compraba.'],
+   ['Precio','Cotiza a la mitad de su rango de 52 semanas; no está barata ni regalada.'],
+   ['Dependencia','Más del 70 % de sus ingresos sigue siendo publicidad: si la economía se frena, los anunciantes recortan primero.']
+  ],
+  des:[
+   'Alphabet es cuatro negocios en uno: Búsqueda y YouTube (la caja que paga todo), Google Cloud (el motor de crecimiento), las apuestas de largo plazo (Waymo, chips TPU, Gemini) y un conglomerado de riesgos regulatorios.',
+   'La pregunta central de 2026 es si el gasto en centros de datos se convierte en ingresos. La respuesta parcial ya llegó: la nube crece 82 % y sus chips se venden a terceros. La que falta es si Búsqueda sobrevive a la IA generativa, y hasta ahora los números dicen que sí.',
+   'Es la empresa donde los grandes referentes más se contradicen. Eso no es una señal de compra ni de venta: es la señal de que vale la pena entenderla.'
+  ],
+  lesson:'<b>Qué aprendemos con Alphabet:</b> la diferencia entre un negocio que <i>genera</i> caja y uno que <i>consume</i> caja dentro de la misma empresa, y por qué el capex es el número que hoy separa a los optimistas de los pesimistas. También: dos inversionistas excelentes pueden mirar la misma empresa y decidir lo contrario.'}
+];
+
+const BIOS={
+ buffett:{ini:'WB',col:'#1f4e79',bio:'Nació en Omaha en 1930. Alumno de Benjamin Graham, convirtió una textilera en quiebra, Berkshire Hathaway, en el mayor conglomerado inversor del mundo. Compra negocios sencillos que entiende, a buen precio, y los conserva décadas. Dejó la dirección ejecutiva a Greg Abel a finales de 2025 y sigue como presidente.'},
+ ackman:{ini:'BA',col:'#6d28d9',bio:'Nació en 1966. Fundó Pershing Square en 2004. Inversionista activista: toma posiciones grandes en pocas empresas y presiona a la administración para cambiar. Famoso por su cobertura de 2020 que convirtió 27 millones en 2,600 millones, y por perder contra Herbalife.'},
+ druck:{ini:'SD',col:'#b45309',bio:'Nació en 1953. Fundó Duquesne en 1981 y fue el gestor detrás de la apuesta de George Soros contra la libra en 1992. Inversionista macro: se mueve por tasas, divisas y ciclos, con posiciones grandes y de corta duración. Desde 2010 solo maneja su propio dinero.'},
+ tepper:{ini:'DT',col:'#0e7490',bio:'Nació en 1957. Fundó Appaloosa en 1993 y se hizo famoso comprando bancos en lo peor de 2009. Especialista en deuda en problemas y apuestas contrarias cuando hay pánico. Dueño de los Carolina Panthers de la NFL.'},
+ wood:{ini:'CW',col:'#be185d',bio:'Nació en 1955. Fundó ARK Invest en 2014 con una idea: fondos activos concentrados en innovación disruptiva (IA, genómica, espacio, cripto). Su fondo ARKK subió 150 % en 2020 y cayó más de 70 % después. Publica sus operaciones todos los días.'},
+ tiger:{ini:'CC',col:'#a16207',bio:'Chase Coleman nació en 1975. Aprendiz de Julian Robertson (Tiger Management), fundó Tiger Global en 2001. Invierte en tecnología e internet tanto en bolsa como en empresas privadas. Tuvo uno de los peores años de la historia de los fondos en 2022 y se ha recuperado desde entonces.'},
+ burry:{ini:'MB',col:'#374151',bio:'Nació en 1971. Médico neurólogo que dejó la residencia para invertir. Con Scion apostó contra las hipotecas basura antes de 2008 y ganó cientos de millones; su historia es "The Big Short". Contrarian por naturaleza; cerró su fondo en 2025 y hoy escribe un boletín.'},
+ dalio:{ini:'RD',col:'#065f46',bio:'Nació en 1949. Fundó Bridgewater en 1975 desde su departamento y la convirtió en el fondo de cobertura más grande del mundo. Creador del portafolio "All Weather" y del libro "Principios". Cedió el control en 2022 y hoy es más pensador macro que gestor.'},
+ icahn:{ini:'CI',col:'#7f1d1d',bio:'Nació en 1936. El "tiburón corporativo" original de los años 80 (TWA, Texaco). Compra participaciones y exige asientos en el consejo, recompras o ventas de la empresa. Su holding Icahn Enterprises cayó fuerte en 2023 tras un reporte que cuestionó sus dividendos.'},
+ coatue:{ini:'PL',col:'#1d4ed8',bio:'Philippe Laffont nació en 1967. Otro "cachorro de Tiger": fundó Coatue en 1999 enfocado en tecnología. Combina bolsa con capital de riesgo y hoy está fuertemente concentrado en inteligencia artificial.'}
+};
+REFS.forEach(r=>Object.assign(r,BIOS[r.id]||{}));
+
+const TOP5={fecha:'18 sep 2026',fuente:'stockti.com (consenso) y Zacks (nuevos Strong Buy, 16 y 18 sep)',
+ nota:'"Compra fuerte" no significa que tú debas comprar: significa que la mayoría de los analistas que cubren la acción la califican así. Ojo con dos cosas: el consenso suele llegar tarde (califican bien lo que ya subió) y casi nunca dicen "vender". <button class="i" data-def="consenso">i</button>',
+ lista:[
+  {tk:'AMZN',nm:'Amazon',a:75,b:70,h:5,s:0,pt:'237',why:'Nube (AWS) + publicidad + comercio. El objetivo promedio está por debajo del precio: los analistas la quieren pero ya la ven "en precio".'},
+  {tk:'META',nm:'Meta Platforms',a:71,b:62,h:9,s:0,pt:'798',why:'La que más subieron de objetivo este mes tras lanzar Muse. La tienes en "Sigo".'},
+  {tk:'GOOGL',nm:'Alphabet',a:70,b:62,h:8,s:0,pt:'409',why:'Nube +82 % y chips propios. Es la ficha publicada abajo.'},
+  {tk:'MSFT',nm:'Microsoft',a:69,b:64,h:5,s:0,pt:'496',why:'Casi unanimidad de compra, pero el objetivo promedio ya no está lejos del precio.'},
+  {tk:'NVDA',nm:'Nvidia',a:68,b:64,h:3,s:1,pt:'220',why:'La única de las cinco con un analista en "vender". La tienes en "Sigo".'}
+ ],
+ zacks:[['ANF','Abercrombie & Fitch'],['APH','Amphenol'],['PARR','Par Pacific'],['HPQ','HP Inc.'],['SBLK','Star Bulk Carriers'],['TRV','Travelers'],['HMN','Horace Mann']],
+ zacksNota:'Zacks califica por revisiones de estimaciones de utilidades: entran a "Strong Buy" cuando los analistas suben sus números. Son señales de momento, no de calidad del negocio.'};
+GLOS.margen={t:'Margen bruto',b:'Lo que le queda a la empresa de cada peso vendido después de pagar lo que cuesta fabricar el producto. Margen bruto de 65 % = de cada 100 pesos de tenis, 65 son para cubrir gastos y ganar. Los márgenes altos indican poder de marca: la gente paga más de lo que cuesta hacerlo.'};
+GLOS.consenso={t:'Consenso de analistas',b:'El promedio de las opiniones de los analistas que cubren una acción. Se mide con la calificación (Compra/Mantener/Venta) y el precio objetivo promedio. Sirve para saber qué piensa Wall Street, pero tiene sesgo optimista: los bancos que emiten las calificaciones también hacen negocios con esas empresas.'};
+
+const GLOS_TRADER=[
+ ['Largo / corto (long / short)','Ir largo es comprar esperando que suba. Ir corto es vender prestado esperando que baje para recomprar más barato. El corto tiene pérdida potencialmente ilimitada.'],
+ ['Bid / ask y spread','Bid es lo que alguien paga hoy; ask, lo que alguien pide. El spread es la diferencia: tu costo oculto por entrar y salir. Cuanto más pequeña la empresa, mayor el spread.'],
+ ['Orden de mercado','Se ejecuta ya, al precio que haya. Rápida pero puedes pagar más de lo que veías en pantalla si la acción se mueve.'],
+ ['Orden limitada','Se ejecuta solo al precio que fijas o mejor. Controlas el precio, no la ejecución: puede no llenarse nunca.'],
+ ['Stop loss','Orden que vende automáticamente si el precio cae hasta cierto nivel. Limita la pérdida; en caídas bruscas puede ejecutarse peor de lo esperado.'],
+ ['Take profit','Orden que vende automáticamente al alcanzar tu objetivo de ganancia. La otra mitad de un plan: decidir la salida antes de entrar.'],
+ ['Vela (candlestick)','Cada vela muestra apertura, cierre, máximo y mínimo de un periodo. Cuerpo verde = cerró arriba de donde abrió; rojo = abajo. Las mechas son los extremos.'],
+ ['Gap','Hueco entre el cierre de ayer y la apertura de hoy, normalmente por una noticia fuera de horario. Muchos gaps se "cierran" días después.'],
+ ['Breakout (rompimiento)','Cuando el precio cruza un nivel de resistencia o soporte con volumen. Los traders lo siguen; los falsos rompimientos son la trampa clásica.'],
+ ['Pullback','Retroceso temporal dentro de una tendencia. Un pullback en tendencia alcista es una pausa; distinguirlo de un cambio de tendencia es el arte.'],
+ ['Volatilidad','Qué tanto se mueve un precio. Alta volatilidad = grandes subidas y caídas. Se mide con desviación estándar o con la beta.'],
+ ['VIX','El "índice del miedo": mide la volatilidad esperada del S&P 500 en 30 días. Arriba de 30, hay pánico en el mercado.'],
+ ['Drawdown','Cuánto cayó tu portafolio desde su máximo hasta su mínimo antes de recuperarse. Una caída de 50 % necesita una subida de 100 % para volver.'],
+ ['Apalancamiento y margen','Invertir con dinero prestado por el bróker. Multiplica ganancias y pérdidas; si la pérdida supera cierto nivel, el bróker vende tus posiciones (margin call).'],
+ ['Short squeeze','Cuando una acción muy apostada a la baja sube de golpe y obliga a los cortos a recomprar, lo que la dispara aún más. GameStop 2021 es el ejemplo.'],
+ ['ETF','Fondo que cotiza como una acción y contiene muchas: el S&P 500 completo (VOO, SPY), un sector, un país. Diversificación con un solo ticker y comisiones bajas.'],
+ ['Dividendo y yield','Parte de la utilidad que la empresa reparte en efectivo. El yield es el dividendo anual dividido entre el precio. Un yield muy alto a veces avisa que el precio se desplomó.'],
+ ['Fecha ex-dividendo','Día a partir del cual quien compra ya no recibe el próximo dividendo. Hay que tener la acción antes de esa fecha.'],
+ ['OPI (IPO)','Oferta pública inicial: el día en que una empresa privada empieza a cotizar. Suelen ser volátiles el primer año y traen fecha de lock-up.'],
+ ['Capitalización: large, mid, small cap','Tamaño de la empresa en bolsa. Large cap: más de 10 mil millones de dólares. Small cap: menos de 2 mil millones y mucho más volátil.'],
+ ['Mercado alcista / bajista (bull / bear)','Alcista: sube 20 % o más desde un mínimo. Bajista: cae 20 % o más desde un máximo. Una corrección es una caída de 10 %.'],
+ ['Liquidez','Qué tan fácil es comprar o vender sin mover el precio. Apple es líquida; una acción de 50 millones de capitalización, no.'],
+ ['Opciones: call y put','Contratos que dan derecho a comprar (call) o vender (put) a un precio fijo hasta una fecha. Se usan para apostar con poco capital o para cubrirse. Pueden perder el 100 %.'],
+ ['DCA (compras periódicas)','Invertir una cantidad fija cada mes sin importar el precio. Evita el error de intentar adivinar el mejor momento; la estrategia más recomendada para empezar.'],
+ ['Rebalanceo','Volver tu portafolio a los porcentajes que elegiste (por ejemplo 70 % acciones, 30 % bonos) vendiendo lo que subió y comprando lo que bajó.'],
+ ['Interés compuesto','Ganar rendimiento sobre el rendimiento. 10 % anual duplica el dinero en unos 7 años (regla del 72: 72 ÷ tasa = años para duplicar).'],
+ ['Fondo de emergencia','Dinero para 3 a 6 meses de gastos fuera de la bolsa. Sin él, una caída te obliga a vender en el peor momento.'],
+ ['CETES y bonos','Deuda: le prestas al gobierno (CETES, Treasuries) o a una empresa y te paga interés. Menos riesgo que las acciones; el precio del bono baja cuando suben las tasas.'],
+ ['Sesgo de confirmación','Buscar solo la información que confirma lo que ya crees de una acción. El enemigo número uno del inversionista; por eso las fichas van primero con positivos y luego negativos.'],
+ ['FOMO','Miedo a quedarse fuera. Comprar porque todos hablan de una acción, normalmente cerca del máximo. Si sientes urgencia, casi siempre es señal de esperar.']
+];
+
+/* ================== UTILIDADES ================== */
+const $=s=>document.querySelector(s);
+const fmt=(n,d)=>n==null||isNaN(n)?'—':Number(n).toLocaleString('es-MX',{minimumFractionDigits:d??2,maximumFractionDigits:d??2});
+const pct=n=>n==null||isNaN(n)?'—':(n>0?'+':'')+fmt(n,1)+' %';
+const cls=n=>n>0?'up':n<0?'down':'';
+const sgn=n=>n>0?'+':'';
+const big=n=>{if(n==null||isNaN(n))return '—';if(n>=1e12)return fmt(n/1e12,2)+' B';if(n>=1e9)return fmt(n/1e9,1)+' mil M';return fmt(n/1e6,0)+' M';};
+function parseCSV(t){const rows=[];let row=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c=='"'){if(t[i+1]=='"'){f+='"';i++;}else q=false;}else f+=c;}else{if(c=='"')q=true;else if(c==','){row.push(f);f='';}else if(c=='\n'||c=='\r'){if(c=='\r'&&t[i+1]=='\n')i++;row.push(f);rows.push(row);row=[];f='';}else f+=c;}}if(f!==''||row.length){row.push(f);rows.push(row);}return rows;}
+const num=s=>{if(s==null)return null;s=String(s).replace(/,/g,'').trim();if(s===''||s==='#N/A')return null;const n=parseFloat(s);return isNaN(n)?null:n;};
+function parseDate(s){s=String(s).trim();if(/^\d+(\.\d+)?$/.test(s)){const n=parseFloat(s);if(n<30000||n>80000)return null;const d=new Date(Math.round((n-25569)*86400000));return new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());}const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(!m)return null;let d=+m[1],mo=+m[2];if(mo>12){[d,mo]=[mo,d];}return new Date(+m[3],mo-1,d);}
+function buildData(csv){
+  const rows=parseCSV(csv);const H=rows[0];const idx=k=>H.indexOf(k);const list=[];let i=1;
+  for(;i<rows.length;i++){const r=rows[i];if(!r[0]||r[0]==='HISTORICO')break;
+    list.push({tk:r[0],nm:r[1],st:r[2],sym:r[3],tipo:idx('Tipo')>=0?(r[idx('Tipo')]||'Accion'):'Accion',ccy:idx('Moneda')>=0?(r[idx('Moneda')]||'USD'):'USD',px:num(r[idx('Precio')]),ch:num(r[idx('CambioPct')]),h52:num(r[idx('High52')]),l52:num(r[idx('Low52')]),pe:num(r[idx('PE')]),eps:num(r[idx('EPS')]),mcap:num(r[idx('MarketCap')]),beta:num(r[idx('Beta')]),vol:num(r[idx('Volumen')]),prev:num(r[idx('CierreAyer')]),hist:[]});}
+  while(i<rows.length&&rows[i][0]!=='HISTORICO')i++;
+  if(i<rows.length){const tks=rows[i+1]||[];const start=i+3;
+    for(let c=0;c<tks.length;c+=2){const tk=tks[c];if(!tk)continue;const it=list.find(x=>x.tk===tk);if(!it)continue;
+      for(let r=start;r<rows.length;r++){const d=parseDate(rows[r][c]),v=num(rows[r][c+1]);if(d&&v!=null)it.hist.push({d,v});}
+      it.hist.sort((a,b)=>a.d-b.d);}}
+  for(const it of list){const n=it.hist.length;if(it.px==null&&n){it.px=it.hist[n-1].v;if(it.prev==null&&n>1)it.prev=it.hist[n-2].v;if(it.ch==null&&it.prev)it.ch=(it.px/it.prev-1)*100;}}
+  return list.filter(x=>x.tk);
+}
+const sma=(a,n)=>a.length<n?null:a.slice(-n).reduce((s,x)=>s+x,0)/n;
+function smaSeries(a,n){return a.map((_,i)=>i<n-1?null:a.slice(i-n+1,i+1).reduce((s,x)=>s+x,0)/n);}
+function rsi(a,n=14){if(a.length<n+1)return null;let g=0,l=0;for(let i=1;i<=n;i++){const d=a[i]-a[i-1];if(d>0)g+=d;else l-=d;}g/=n;l/=n;for(let i=n+1;i<a.length;i++){const d=a[i]-a[i-1];g=(g*(n-1)+(d>0?d:0))/n;l=(l*(n-1)+(d<0?-d:0))/n;}if(l===0)return 100;return 100-100/(1+g/l);}
+const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+
+/* ================== ESTADO ================== */
+let DATA=[],LIVE=false,STAMP='',FILTER='all',DRANGE=60;
+let PROFILE=store.get('radar-profile',null);   // {name,cur,sigo:[]}
+let LOTS=store.get('radar-lots',[]);           // {id,tk,tipo,fecha,q,px,cur,fx,nota}
+const CUR=()=>PROFILE?.cur||'USD';
+const FX=()=>{const r=DATA.find(d=>d.tk==='USDMXN');return r&&r.px?r.px:17.16;};
+const byTk=tk=>DATA.find(d=>d.tk===tk);
+const stocks=()=>DATA.filter(d=>(d.st==='Tengo'||d.st==='Sigo'||d.st==='Base'||d.st==='Custom')&&(d.px!=null||d.hist.length||d.st==='Custom'));
+const pxLabel=it=>(it.ccy==='MXN'?'MX$':'$')+fmt(it.px,it.px!=null&&it.px<100?2:(it.px>=10000?0:2));
+let CUSTOM=store.get('radar-custom',[]);
+function mergeCustom(){DATA=DATA.filter(d=>d.st!=='Custom');for(const c of CUSTOM){if(DATA.find(d=>d.tk===c.tk))continue;DATA.push({tk:c.tk,nm:c.nm,st:'Custom',sym:'',tipo:c.tipo,ccy:c.ccy,px:c.px,ch:null,h52:null,l52:null,pe:null,eps:null,mcap:null,beta:null,vol:null,prev:null,hist:[],custom:true,upd:c.upd});}}
+
+/* ================== CÁLCULO DE POSICIONES ================== */
+function lotCostUSD(l){return l.cur==='USD'?l.q*l.px:l.q*l.px/(l.fx||FX());}
+function pxUSD(it){if(!it||it.px==null)return null;return it.ccy==='MXN'?it.px/FX():it.px;}
+function prevUSD(it){if(!it||it.prev==null)return null;return it.ccy==='MXN'?it.prev/FX():it.prev;}
+function positions(){
+  const map={};
+  for(const l of LOTS){const p=map[l.tk]||(map[l.tk]={tk:l.tk,q:0,buyQ:0,buyCost:0,lots:[]});p.lots.push(l);
+    if(l.tipo==='venta')p.q-=l.q;else{p.q+=l.q;p.buyQ+=l.q;p.buyCost+=lotCostUSD(l);}}
+  return Object.values(map).map(p=>{const it=byTk(p.tk);p.q=Math.max(0,p.q);p.avg=p.buyQ?p.buyCost/p.buyQ:0;p.basis=p.avg*p.q;
+    p.px=pxUSD(it);p.value=p.px!=null?p.q*p.px:null;p.pnl=p.value!=null?p.value-p.basis:null;p.pnlPct=p.basis?p.pnl/p.basis*100:null;
+    p.day=(it&&prevUSD(it)!=null&&p.px!=null)?p.q*(p.px-prevUSD(it)):null;return p;}).filter(p=>p.q>0||p.lots.length);
+}
+const toCur=usd=>usd==null?null:(CUR()==='MXN'?usd*FX():usd);
+const money=(usd,d)=>{const v=toCur(usd);return v==null?'—':(CUR()==='MXN'?'$':'US$')+fmt(v,d??(Math.abs(v)>=10000?0:2));};
+function stateOf(tk){const p=positions().find(x=>x.tk===tk);if(p&&p.q>0)return 'Tengo';if(PROFILE){return PROFILE.sigo.includes(tk)?'Sigo':null;}const it=byTk(tk);return it?it.st:null;}
+
+/* ================== RENDER: TAPE ================== */
+function renderTape(){
+  const items=DATA.filter(d=>d.px!=null&&d.st!=='Base'&&d.st!=='Custom').map(d=>`<span><b>${d.tk}</b>${fmt(d.px,d.px<100?2:0)} <span class="${cls(d.ch)}">${d.ch!=null?pct(d.ch):''}</span></span>`).join('');
+  $('#tape').innerHTML=items+items;
+}
+
+/* ================== RENDER: CARTERA ================== */
+function sparkline(vals,color){if(vals.length<2)return '';const W=200,H=38,lo=Math.min(...vals),hi=Math.max(...vals),sp=hi-lo||1;const pts=vals.map((v,i)=>`${(i/(vals.length-1)*W).toFixed(1)},${(H-3-(v-lo)/sp*(H-6)).toFixed(1)}`).join(' ');return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/></svg>`;}
+function signals(it){const v=it.hist.map(h=>h.v);const out=[];const s20=sma(v,20),s50=sma(v,50),r=rsi(v);const p=it.px??v[v.length-1];
+  if(s20!=null)out.push(`<span class="${p>=s20?'g':'r'}">${p>=s20?'▲':'▼'} SMA 20</span>`);
+  if(s50!=null)out.push(`<span class="${p>=s50?'g':'r'}">${p>=s50?'▲':'▼'} SMA 50</span>`);
+  if(r!=null&&(r>70||r<30))out.push(`<span class="a">RSI ${r.toFixed(0)}</span>`);
+  if(it.h52&&p)out.push(`<span>${fmt((p/it.h52-1)*100,0)}% máx 52s</span>`);return out.join('');}
+function cardHTML(it,pos){
+  const st=stateOf(it.tk);const v=it.hist.slice(-90).map(h=>h.v);const c=it.ch>=0?'var(--up)':'var(--down)';
+  let plr='';if(pos&&pos.q>0){plr=`<div class="pl-row"><span>${fmt(pos.q,pos.q%1?2:0)} acc · costo ${money(pos.avg)}</span><span class="${cls(pos.pnl)}">${money(pos.value)} · ${sgn(pos.pnl)}${money(pos.pnl)} (${pct(pos.pnlPct)})</span></div>`;}
+  return `<button class="pos" data-tk="${it.tk}">
+    <div class="row"><span class="tk">${it.tk}</span><span class="nm">${it.nm}</span>${st?`<span class="tag ${st==='Tengo'?'tengo':''}">${st}</span>`:''}</div>
+    <div class="mid"><div><span class="px num">${pxLabel(it)}</span><span class="ch num ${cls(it.ch)}">${it.custom?'<span class="small">manual</span>':pct(it.ch)}</span></div><div class="spark">${sparkline(v,c)}</div></div>
+    <div class="sig">${signals(it)}</div>${plr}</button>`;
+}
+function renderCartera(){
+  const el=$('#cartera');const P=positions();const name=PROFILE?.name;
+  const held=P.filter(p=>p.q>0);const tot=held.reduce((s,p)=>s+(p.value||0),0),basis=held.reduce((s,p)=>s+p.basis,0),day=held.reduce((s,p)=>s+(p.day||0),0);
+  const pnl=tot-basis;const dayPct=(tot-day)?day/(tot-day)*100:null;
+  let hero='';
+  if(!PROFILE){
+    hero=`<div class="hero"><div class="lbl">Bienvenido</div><div style="font-size:22px;font-weight:700;margin:6px 0">Haz tu registro para personalizar Radar</div><p class="small">Pon tu nombre, elige tu moneda y registra tus compras. Cada quien tiene su propia cartera en su teléfono.</p><div class="actions"><button class="btn" data-open="m-perfil">Crear mi registro</button></div></div>`;
+  }else{
+    hero=`<div class="hero"><div class="lbl">Cartera de ${name} · ${CUR()}</div>
+      <div class="tot num">${held.length?money(tot):'—'}</div>
+      <div class="sub num ${cls(pnl)}">${held.length?`${sgn(pnl)}${money(pnl)} (${pct(basis?pnl/basis*100:null)}) desde tu costo`:'Aún no registras compras'}</div>
+      <div class="hgrid"><div><div class="lbl">Hoy</div><div class="v num ${cls(day)}">${held.length?sgn(day)+money(day)+'<br>'+pct(dayPct):'—'}</div></div><div><div class="lbl">Costo</div><div class="v num">${held.length?money(basis):'—'}</div></div><div><div class="lbl">USD/MXN</div><div class="v num">${fmt(FX(),2)}</div></div></div>
+      <div class="cur"><button data-c="USD" ${CUR()==='USD'?'class="on"':''}>USD</button><button data-c="MXN" ${CUR()==='MXN'?'class="on"':''}>MXN</button></div>
+      <div class="actions"><button class="btn" data-open="m-mov">+ Registrar compra / venta</button></div></div>`;
+  }
+  const all=stocks();
+  const tengo=all.filter(it=>stateOf(it.tk)==='Tengo'),sigo=all.filter(it=>stateOf(it.tk)==='Sigo'),otros=all.filter(it=>!stateOf(it.tk)&&!it.custom);
+  const sec=(t,arr,empty)=>`<div class="sec"><h3>${t}</h3><span class="small">${arr.length}</span></div>${arr.length?arr.map(it=>cardHTML(it,P.find(p=>p.tk===it.tk))).join(''):`<div class="empty">${empty}</div>`}`;
+  let body='';
+  if(FILTER==='all'||FILTER==='Tengo')body+=sec('Tengo',tengo,PROFILE?'Registra tu primera compra con el botón de arriba.':'Sin registro: se muestran las acciones de ejemplo.');
+  if(FILTER==='all'||FILTER==='Sigo')body+=sec('Sigo',sigo,'Elige en tu registro qué acciones quieres seguir.');
+  if(FILTER==='Otras'){const T={Accion:'Acciones',ETF:'ETFs',Cripto:'Cripto',BMV:'Bolsa Mexicana'};for(const k of Object.keys(T)){const arr=otros.filter(x=>x.tipo===k);if(arr.length)body+=sec(T[k],arr,'');}}
+  el.innerHTML=hero+`<div class="chips" id="filt"><button data-f="all" ${FILTER==='all'?'class="on"':''}>Todas</button><button data-f="Tengo" ${FILTER==='Tengo'?'class="on"':''}>Tengo</button><button data-f="Sigo" ${FILTER==='Sigo'?'class="on"':''}>Sigo</button><button data-f="Otras" ${FILTER==='Otras'?'class="on"':''}>Base (${otros.length})</button></div>`+body+
+    `<p class="aviso">Datos de Google Finance con ~20 min de retraso. Tu registro y tus movimientos viven solo en este dispositivo. Material educativo familiar; no son recomendaciones de compra o venta.</p>`;
+  $('#avatar').textContent=name?name.trim()[0].toUpperCase():'?';
+  el.querySelectorAll('#filt button').forEach(b=>b.addEventListener('click',()=>{FILTER=b.dataset.f;renderCartera();}));
+  el.querySelectorAll('.cur button').forEach(b=>b.addEventListener('click',()=>{PROFILE.cur=b.dataset.c;store.set('radar-profile',PROFILE);renderCartera();}));
+}
+
+/* ================== RENDER: DETALLE ================== */
+function chart(it){
+  const h=it.hist;if(h.length<5)return '<p class="small">Sin historial disponible.</p>';
+  const all=h.map(x=>x.v);const s20=smaSeries(all,20),s50=smaSeries(all,50);
+  const from=Math.max(0,h.length-DRANGE);const H2=h.slice(from),c=all.slice(from),a20=s20.slice(from),a50=s50.slice(from);
+  const W=680,HH=300,L=54,R=14,T=14,B=34;
+  const vals=c.concat(a20.filter(x=>x!=null),a50.filter(x=>x!=null));let lo=Math.min(...vals),hi=Math.max(...vals);const pad=(hi-lo)*0.08||1;lo-=pad;hi+=pad;
+  const x=i=>L+(W-L-R)*i/(c.length-1),y=v=>T+(HH-T-B)*(hi-v)/(hi-lo);
+  let g='';for(let k=0;k<=5;k++){const v=lo+(hi-lo)*k/5;g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${L-8}" y="${y(v)+5}" text-anchor="end" font-size="12" fill="var(--muted)" font-family="Menlo,monospace">${fmt(v,v<20?2:v<200?1:0)}</text>`;}
+  const path=(arr,col,w)=>{let d='';arr.forEach((v,i)=>{if(v==null)return;d+=(d?' L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);});return d?`<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"/>`:'';};
+  // área bajo el precio
+  let area='';{let d='';c.forEach((v,i)=>{d+=(d?' L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);});area=`<path d="${d} L${x(c.length-1).toFixed(1)} ${HH-B} L${L} ${HH-B} Z" fill="url(#gr)" opacity=".35"/>`;}
+  const upc=c[c.length-1]>=c[0]?'var(--up)':'var(--down)';
+  let lbl='';const n=c.length;const every=Math.max(1,Math.round(n/6));H2.forEach((p,i)=>{if(i%every===0||i===n-1){lbl+=`<text x="${x(i)}" y="${HH-B+18}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="Menlo,monospace">${p.d.getDate()} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][p.d.getMonth()]}</text>`;}});
+  // costo promedio
+  const pos=positions().find(p=>p.tk===it.tk);let avgl='';if(pos&&pos.q>0&&pos.avg>lo&&pos.avg<hi){avgl=`<line x1="${L}" x2="${W-R}" y1="${y(pos.avg)}" y2="${y(pos.avg)}" stroke="var(--accent)" stroke-dasharray="5 4" stroke-width="1.5"/><text x="${W-R-4}" y="${y(pos.avg)-5}" text-anchor="end" font-size="11" fill="var(--accent)" font-family="Menlo,monospace">tu costo ${fmt(pos.avg)}</text>`;}
+  return `<svg viewBox="0 0 ${W} ${HH}" role="img" aria-label="Gráfico de cierres"><defs><linearGradient id="gr" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${upc}"/><stop offset="1" stop-color="${upc}" stop-opacity="0"/></linearGradient></defs>${g}${area}${path(a50,'var(--amber)',2)}${path(a20,'#7d88a8',2)}${path(c,upc,2.4)}${avgl}<circle cx="${x(n-1)}" cy="${y(c[n-1])}" r="4" fill="${upc}"/>${lbl}</svg>`;
+}
+function openDetail(tk){
+  const it=byTk(tk);if(!it)return;
+  const v=it.hist.map(h=>h.v),p=it.px??v[v.length-1];const s20=sma(v,20),s50=sma(v,50),r=rsi(v);
+  const ed=EDICION.tickers[tk]||{pos:[],neg:[],notas:[]};const st=stateOf(tk);const pos=positions().find(x=>x.tk===tk);
+  $('#d-tk').textContent=it.tk;$('#d-nm').textContent=it.nm;$('#d-tag').textContent=st||'';$('#d-tag').className='tag '+(st==='Tengo'?'tengo':'');$('#d-tag').style.display=st?'':'none';
+  const pos52=it.h52&&it.l52?((p-it.l52)/(it.h52-it.l52)*100):null;
+  const kpi=(l,v,def)=>`<div class="kpi"><div class="l">${l}${def?` <button class="i" data-def="${def}">i</button>`:''}</div><div class="v num">${v}</div></div>`;
+  let posBlock='';
+  if(pos&&pos.lots.length){
+    posBlock=`<h3>Tu posición <button class="i" data-def="rend">i</button></h3>
+      <div class="grid">${kpi('Acciones',fmt(pos.q,pos.q%1?2:0))}${kpi('Costo promedio',money(pos.avg),'costo')}${kpi('Valor hoy',money(pos.value))}${kpi('Rendimiento',`<span class="${cls(pos.pnl)}">${sgn(pos.pnl)}${money(pos.pnl)}<br><span style="font-size:14px">${pct(pos.pnlPct)}</span></span>`)}</div>
+      <table class="lots"><tr><th>Fecha</th><th>Tipo</th><th>Lote</th><th>Precio</th><th></th></tr>
+      ${pos.lots.slice().sort((a,b)=>b.fecha.localeCompare(a.fecha)).map(l=>`<tr><td>${l.fecha}</td><td class="${l.tipo==='venta'?'down':'up'}">${l.tipo}</td><td>${fmt(l.q,l.q%1?2:0)}</td><td>${l.cur==='MXN'?'$':'US$'}${fmt(l.px)}</td><td><button class="del" data-del="${l.id}">✕</button></td></tr>`).join('')}</table>
+      <div class="actions"><button class="btn ghost" data-open="m-mov" data-pre="${tk}">+ Movimiento en ${tk}</button></div>`;
+  }else if(PROFILE){posBlock=`<div class="actions"><button class="btn ghost" data-open="m-mov" data-pre="${tk}">+ Registrar compra de ${tk}</button></div>`;}
+  if(it.custom){posBlock=`<div class="note"><b>Instrumento manual</b> · precio actualizado el ${it.upd||'—'}. No está en la base de datos, así que no tiene precio en vivo ni gráfica.<div class="actions"><button class="btn ghost" id="c-px">Actualizar precio</button><button class="btn ghost" id="c-req">Pedir que se agregue a la base</button></div></div>`+posBlock;}
+  $('#dbody').innerHTML=`
+    <div class="bigpx num">${pxLabel(it)} <span class="ch ${cls(it.ch)}" style="font-size:20px">${it.custom?'':pct(it.ch)}</span></div>
+    <div class="small num">${it.custom?'Precio manual':'Cierre anterior '+fmt(it.prev)+' · '+(LIVE?'en vivo (~20 min)':'datos del '+SNAPSHOT_DATE)}${it.ccy==='MXN'?' · cotiza en pesos':''}</div>
+    <div class="seg"><button data-r="30" ${DRANGE==30?'class="on"':''}>1M</button><button data-r="60" ${DRANGE==60?'class="on"':''}>3M</button><button data-r="400" ${DRANGE==400?'class="on"':''}>TODO</button></div>
+    <div class="chart">${chart(it)}</div>
+    <div class="leg"><span><i style="background:var(--muted)"></i>Cierre</span><span><i style="background:#7d88a8"></i>SMA20 ${s20?fmt(s20):''}</span><span><i style="background:var(--amber)"></i>SMA50 ${s50?fmt(s50):''}</span></div>
+    <div class="sig">${signals(it)}</div>
+    ${posBlock}
+    <h3>Indicadores</h3>
+    <div class="grid">
+      ${kpi('RSI 14',r!=null?r.toFixed(0)+(r>70?' <span class="amber">alto</span>':r<30?' <span class="amber">bajo</span>':''):'—','rsi')}
+      ${kpi('vs SMA 20',s20?`<span class="${cls(p-s20)}">${pct((p/s20-1)*100)}</span>`:'—','sma')}
+      ${kpi('P/E',it.pe!=null?fmt(it.pe,1):'<span class="small">sin utilidad</span>','pe')}
+      ${kpi('EPS',it.eps!=null?fmt(it.eps):'—','eps')}
+      ${kpi('Beta',it.beta!=null?fmt(it.beta,2):'—','beta')}
+      ${kpi('Cap. mercado',big(it.mcap),'mcap')}
+      ${kpi('Volumen',it.vol!=null?big(it.vol):'—','vol')}
+      ${kpi('vs máx 52s',it.h52?`<span class="${cls(p-it.h52)}">${pct((p/it.h52-1)*100)}</span>`:'—','h52')}
+    </div>
+    ${it.h52&&it.l52?`<div class="small">Rango 52 semanas <button class="i" data-def="h52">i</button></div><div class="bar"><i style="left:${Math.max(0,Math.min(100,pos52))}%"></i></div><div class="rl"><span>${fmt(it.l52)}</span><span>${fmt(it.h52)}</span></div>`:''}
+    <h3>Esta semana</h3>
+    <div class="pl">${ed.pos.map(x=>`<span class="p">${x}</span>`).join('')}${ed.neg.map(x=>`<span class="n">${x}</span>`).join('')}</div>
+    <ul>${ed.notas.map(x=>`<li>${x}</li>`).join('')}</ul>${ed.notas.length?'':'<p class="small">Sin notas en esta edición.</p>'}
+    <p class="aviso">Edición ${EDICION.numero} · ${EDICION.fecha}. Material educativo, no recomendaciones. Verifica en tu bróker antes de operar.</p>`;
+  $('#dbody').querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{DRANGE=+b.dataset.r;openDetail(tk);}));
+  const cpx=$('#c-px');if(cpx)cpx.addEventListener('click',()=>{const v=parseFloat(prompt('Precio actual de '+tk+' ('+it.ccy+'):',it.px??''));if(v>0){const c=CUSTOM.find(x=>x.tk===tk);if(c){c.px=v;c.upd=new Date().toISOString().slice(0,10);store.set('radar-custom',CUSTOM);mergeCustom();renderCartera();openDetail(tk);}}});
+  const creq=$('#c-req');if(creq)creq.addEventListener('click',()=>{window.location.href='mailto:'+REQ_EMAIL+'?subject='+encodeURIComponent('Radar · agregar a la base: '+tk)+'&body='+encodeURIComponent(`Radar · solicitud para agregar a la base de datos\nDe: ${PROFILE?.name||''}\nInstrumento: ${tk} · ${it.nm} (${it.tipo}, ${it.ccy})`);});
+  $('#dbody').querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();if(confirm('¿Borrar este movimiento?')){LOTS=LOTS.filter(l=>l.id!==b.dataset.del);store.set('radar-lots',LOTS);openDetail(tk);renderCartera();}}));
+  $('#detail').classList.add('on');document.body.style.overflow='hidden';$('#detail').scrollTop=0;
+}
+$('#back').addEventListener('click',()=>{$('#detail').classList.remove('on');document.body.style.overflow='';});
+
+/* ================== RENDER: SEMANA / REFS / FICHAS / APRENDE ================== */
+function renderSemana(){const e=EDICION,u=e.unicornio,s=e.seguir;
+  $('#semana').innerHTML=`<p class="small" style="margin-top:8px">Edición ${e.numero} · semana del ${e.semana}</p>
+    <h2 style="margin-top:4px">Clima de la semana</h2><ul>${e.clima.map(x=>`<li>${x}</li>`).join('')}</ul>
+    <h2>Unicornio de la semana <span class="amber" style="font-size:14px">· alto riesgo</span></h2>
+    <div class="card"><div class="row"><span class="tk">${u.tk}</span><span class="nm">${u.nm}</span><span class="tag">Solo para estudiar</span></div>
+      <div class="px num" style="margin-top:8px;font-size:20px">${u.px}</div><div class="small">${u.sub}</div><p>${u.txt}</p>
+      <div class="pl">${u.pos.map(x=>`<span class="p">${x}</span>`).join('')}${u.neg.map(x=>`<span class="n">${x}</span>`).join('')}</div>
+      <p><b>Qué la haría fallar:</b> ${u.fallar}</p><p><b>Qué observar:</b> ${u.observar}</p></div>
+    <h2>Empresa a seguir</h2>
+    <div class="card"><div class="row"><span class="tk">${s.tk}</span><span class="nm">${s.nm}</span><span class="tag">Propuesta</span></div>
+      <div class="px num" style="margin-top:8px;font-size:20px">${s.px}</div><div class="small">${s.sub}</div><p>${s.why}</p>
+      <h3>Lo positivo</h3><ul>${s.pos.map(x=>`<li>${x}</li>`).join('')}</ul><h3>Lo negativo</h3><ul>${s.neg.map(x=>`<li>${x}</li>`).join('')}</ul><h3>Para la familia</h3><p>${s.fam}</p></div>
+    <h2>Análisis técnico · ${e.tecnico.tk}</h2><p class="small">La gráfica con SMA 20/50 está en la tarjeta de ${e.tecnico.tk}, con datos vivos.</p><ul>${e.tecnico.txt.map(x=>`<li>${x}</li>`).join('')}</ul>
+    <h2>Calendario</h2><table class="cal">${e.calendario.map(c=>`<tr><td>${c[0]}</td><td>${c[1]}</td></tr>`).join('')}</table>
+    <h2>Fuentes</h2><p class="small">${e.fuentes}</p>
+    <p class="aviso">Material educativo privado para la familia. No es asesoría financiera; los precios objetivo son opiniones de terceros.</p>`;}
+function renderRefs(){
+  $('#refchips').innerHTML=REFS.map((r,i)=>`<button data-p="${r.id}" ${i==0?'class="on"':''}>${r.n}</button>`).join('');
+  $('#refpanels').innerHTML=REFS.map((r,i)=>`<div class="panel ${i==0?'on':''}" id="p-${r.id}"><div class="rhead"><div class="emb" style="background:${r.col||'#333'}">${r.ini||''}</div><div><h2>${r.h}</h2></div></div>${r.bio?`<p class="bio">${r.bio}</p>`:''}<h3>Último 13F</h3>
+    ${r.kv.length?`<div class="kv">${r.kv.map(k=>`<span>${k[0]}</span><span>${k[1]}</span>`).join('')}</div>`:''}
+    ${r.buy?`<p><b class="up">Compró:</b> ${r.buy}</p>`:''}${r.sell?`<p><b class="down">Vendió:</b> ${r.sell}</p>`:''}${r.les?`<p>${r.les}</p>`:''}</div>`).join('');
+  $('#refchips').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{$('#refchips').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));$('#p-'+b.dataset.p).classList.add('on');}));}
+function renderFichas(){
+  $('#fchips').innerHTML=FICHAS.map((f,i)=>`<button data-f="${i}" ${i==0?'class="on"':''}>${f.tk}</button>`).join('');
+  const show=i=>{const f=FICHAS[i];$('#fbody').innerHTML=`<div class="card"><div class="row"><span class="tk">${f.tk}</span><span class="nm">${f.nm}</span><span class="tag">${f.fecha}</span></div>
+      <div class="px num" style="margin-top:8px;font-size:20px">${f.px}</div><div class="small">${f.sub}</div>
+      <h3>Lo positivo</h3><table class="ft posT"><tr><th>Dato</th><th>Qué significa</th></tr>${f.pos.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>
+      <h3>Lo negativo</h3><table class="ft negT"><tr><th>Dato</th><th>Qué significa</th></tr>${f.neg.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>
+      <h3>Desarrollo</h3>${f.des.map(x=>`<p>${x}</p>`).join('')}<div class="lesson">${f.lesson}</div>
+      <p class="aviso">Ficha con datos al ${f.fecha}. Material educativo; no es recomendación.</p></div>`;};
+  show(0);$('#fchips').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{$('#fchips').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');show(+b.dataset.f);window.scrollTo(0,0);}));}
+function renderTop5(){const t=TOP5;
+  $('#top5').innerHTML=`<div class="top5"><div class="hd"><b>5 con más recomendaciones de compra</b><div class="small">Consenso de analistas · ${t.fecha}</div></div>
+    ${t.lista.map((x,i)=>`<div class="t5"><div class="hr"><span class="rk">${i+1}</span><span class="tk">${x.tk}</span><span class="nm"></span><div class="cnt"><b>${x.b}</b> compra · ${x.h} mant. · ${x.s} venta<br>obj. prom. $${x.pt}<div class="bars"><i class="b" style="width:${x.b/x.a*100}%"></i><i class="h" style="width:${x.h/x.a*100}%"></i></div></div></div><div class="why"><b style="color:var(--ink)">${x.nm}.</b> ${x.why}</div></div>`).join('')}
+    <div class="hd" style="border-top:1px solid var(--line);border-bottom:0"><div class="small">${t.nota}</div></div></div>
+    <div class="top5"><div class="hd"><b>Recién subidas a "Strong Buy" (Zacks)</b><div class="small">${t.zacksNota}</div></div><div class="t5" style="display:flex;flex-wrap:wrap;gap:6px">${t.zacks.map(z=>`<span class="tag" title="${z[1]}">${z[0]} · ${z[1]}</span>`).join('')}</div></div>
+    <p class="small">Fuentes: ${t.fuente}. Los objetivos promedio pueden tener retraso; verifica el precio actual en tu bróker.</p>`;}
+let REQS=store.get('radar-reqs',[]);
+function renderReqs(){$('#reqlist').innerHTML=REQS.length?`<h3>Solicitudes pendientes</h3>`+REQS.map(r=>`<div class="req"><span><b>${r.tk}</b> · ${r.tipo}${r.q?` — <span class="muted">${r.q}</span>`:''}<br><span class="small">${r.fecha}</span></span><button class="del" data-rq="${r.id}">✕</button></div>`).join(''):'';
+  $('#reqlist').querySelectorAll('[data-rq]').forEach(b=>b.onclick=()=>{REQS=REQS.filter(r=>r.id!==b.dataset.rq);store.set('radar-reqs',REQS);renderReqs();});}
+function reqText(){const tk=$('#rq-tk').value.trim(),tipo=getOpt('#rq-tipo'),q=$('#rq-q').value.trim(),nm=$('#rq-name').value.trim();
+  return `Radar · solicitud de ficha\nDe: ${nm||'…'}\nInstrumento: ${tk||'…'} (${tipo})\nFormato: tabla de datos positivos, tabla de datos negativos y después el desarrollo; cada dato con explicación educativa (ⓘ) y al final "qué aprendemos con esta empresa". Análisis técnico con SMA 20/50/200 si aplica. Sin recomendación de compra o venta.${q?`\nLo que quiero entender: ${q}`:''}`;}
+['#rq-tk','#rq-q','#rq-name'].forEach(s=>$(s).addEventListener('input',()=>{$('#rq-out').textContent=reqText();}));
+document.querySelectorAll('#rq-tipo .opt').forEach(b=>b.addEventListener('click',()=>{setOpt('#rq-tipo',b.dataset.v);$('#rq-out').textContent=reqText();}));
+$('#rq-copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(reqText());$('#rq-copy').textContent='Copiado ✓';setTimeout(()=>$('#rq-copy').textContent='Copiar',1500);}catch(e){alert('Selecciona y copia el texto del recuadro.');}});
+$('#rq-mail').addEventListener('click',()=>{const tk=$('#rq-tk').value.trim();if(!tk){$('#rq-tk').focus();return;}const nm=$('#rq-name').value.trim();if(!nm){$('#rq-name').focus();return;}window.location.href='mailto:'+REQ_EMAIL+'?subject='+encodeURIComponent('Radar · solicitud de ficha: '+tk)+'&body='+encodeURIComponent(reqText());});
+$('#rq-share').addEventListener('click',async()=>{if(navigator.share){try{await navigator.share({text:reqText()});}catch(e){}}else{$('#rq-copy').click();}});
+$('#rq-save').addEventListener('click',()=>{const tk=$('#rq-tk').value.trim();if(!tk){$('#rq-tk').focus();return;}REQS.push({id:Date.now().toString(36),tk,tipo:getOpt('#rq-tipo'),q:$('#rq-q').value.trim(),fecha:new Date().toLocaleDateString('es-MX')});store.set('radar-reqs',REQS);renderReqs();closeModals();});
+function renderAprende(){$('#glosT').innerHTML=GLOS_TRADER.map(g=>`<details><summary>${g[0]}</summary><p>${g[1]}</p></details>`).join('');$('#concepto').innerHTML=`<b>${EDICION.concepto.t}</b><p style="margin:6px 0 0">${EDICION.concepto.b}</p>`;
+  $('#glos').innerHTML=Object.values(GLOS).sort((a,b)=>a.t.localeCompare(b.t)).map(g=>`<details><summary>${g.t}</summary><p>${g.b}</p></details>`).join('');}
+
+/* ================== MODALES ================== */
+function openModal(id,pre){
+  if(id==='m-perfil'){$('#p-name').value=PROFILE?.name||'';setOpt('#p-cur',PROFILE?.cur||'USD');
+    {const cur=PROFILE?PROFILE.sigo:stocks().filter(x=>x.st==='Sigo').map(x=>x.tk);const T={Accion:'Acciones',ETF:'ETFs',Cripto:'Cripto',BMV:'Bolsa Mexicana'};$('#p-sigo').innerHTML=Object.keys(T).map(k=>{const arr=stocks().filter(it=>it.tipo===k&&!it.custom);return arr.length?`<div class="small" style="width:100%;margin-top:6px">${T[k]}</div>`+arr.map(it=>`<button class="opt sig ${cur.includes(it.tk)?'on':''}" data-v="${it.tk}">${it.tk}</button>`).join(''):'';}).join('');}
+    $('#p-sigo').querySelectorAll('.opt').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+    $('#perfil-title').textContent=PROFILE?'Tu registro':'Crear registro';$('#p-danger').style.display=PROFILE?'flex':'none';}
+  if(id==='m-mov'){if(!PROFILE){openModal('m-perfil');return;}
+    {const T={Accion:'Acciones',ETF:'ETFs',Cripto:'Cripto',BMV:'Bolsa Mexicana',Bono:'Bonos',Fondo:'Fondos',Otro:'Otros'};const list=stocks();const held=positions().filter(p=>p.q>0).map(p=>p.tk);let html='';const mine=list.filter(it=>held.includes(it.tk));if(mine.length)html+=`<optgroup label="Mis posiciones">${mine.map(it=>`<option value="${it.tk}">${it.tk} · ${it.nm}</option>`).join('')}</optgroup>`;for(const k of Object.keys(T)){const arr=list.filter(it=>it.tipo===k&&!held.includes(it.tk));if(arr.length)html+=`<optgroup label="${T[k]}">${arr.map(it=>`<option value="${it.tk}">${it.tk} · ${it.nm}</option>`).join('')}</optgroup>`;}html+=`<optgroup label="No está en la lista"><option value="__custom">＋ Otro instrumento (ticker, ETF, cripto, bono…)</option></optgroup>`;$('#mv-tk').innerHTML=html;if(pre)$('#mv-tk').value=pre;}
+    $('#mv-custom').style.display='none';$('#mc-tk').value='';$('#mc-nm').value='';$('#mc-px').value='';setOpt('#mc-ccy','USD');
+    $('#mv-fecha').value=new Date().toISOString().slice(0,10);$('#mv-q').value='';$('#mv-px').value='';$('#mv-fx').value='';$('#mv-nota').value='';$('#mv-err').textContent='';
+    setOpt('#mv-tipo','compra');setOpt('#mv-cur',CUR());fxToggle();}
+  if(id==='m-req'){$('#rq-tk').value=pre||'';$('#rq-name').value=PROFILE?.name||'';$('#rq-q').value='';setOpt('#rq-tipo','Acción');$('#rq-out').textContent=reqText();}
+  $('#'+id).classList.add('on');
+}
+function setOpt(sel,v){document.querySelectorAll(sel+' .opt').forEach(b=>b.classList.toggle('on',b.dataset.v===v));}
+const getOpt=sel=>document.querySelector(sel+' .opt.on')?.dataset.v;
+function fxToggle(){$('#mv-fxwrap').style.display=getOpt('#mv-cur')==='MXN'?'block':'none';}
+$('#mv-tk').addEventListener('change',()=>{$('#mv-custom').style.display=$('#mv-tk').value==='__custom'?'block':'none';});
+document.querySelectorAll('#p-cur .opt,#mv-tipo .opt,#mv-cur .opt,#mc-ccy .opt').forEach(b=>b.addEventListener('click',()=>{setOpt('#'+b.parentElement.id,b.dataset.v);fxToggle();}));
+$('#p-save').addEventListener('click',()=>{const name=$('#p-name').value.trim();if(!name){$('#p-name').focus();return;}
+  PROFILE={name,cur:getOpt('#p-cur'),sigo:[...document.querySelectorAll('#p-sigo .opt.on')].map(b=>b.dataset.v)};store.set('radar-profile',PROFILE);closeModals();renderCartera();});
+$('#p-reset').addEventListener('click',()=>{if(confirm('Se borrarán tu registro y todos tus movimientos de este teléfono. ¿Continuar?')){localStorage.removeItem('radar-profile');localStorage.removeItem('radar-lots');PROFILE=null;LOTS=[];closeModals();renderCartera();}});
+$('#p-export').addEventListener('click',()=>{const blob=new Blob([JSON.stringify({profile:PROFILE,lots:LOTS},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='radar-respaldo.json';a.click();});
+$('#mv-save').addEventListener('click',()=>{
+  let tk=$('#mv-tk').value;const q=parseFloat($('#mv-q').value),px=parseFloat($('#mv-px').value),fecha=$('#mv-fecha').value,cur=getOpt('#mv-cur'),tipo=getOpt('#mv-tipo');const fx=parseFloat($('#mv-fx').value)||null;
+  if(tk==='__custom'){const ctk=$('#mc-tk').value.trim().toUpperCase(),cnm=$('#mc-nm').value.trim()||ctk,ctipo=$('#mc-tipo').value,cccy=getOpt('#mc-ccy');let cpx=parseFloat($('#mc-px').value);if(!ctk){$('#mv-err').textContent='Escribe el ticker del instrumento nuevo.';return;}if(!(cpx>0))cpx=px>0?(cur==='MXN'&&cccy==='USD'?px/FX():cur==='USD'&&cccy==='MXN'?px*FX():px):null;if(!CUSTOM.find(c=>c.tk===ctk)&&!DATA.find(d=>d.tk===ctk)){CUSTOM.push({tk:ctk,nm:cnm,tipo:ctipo,ccy:cccy,px:cpx,upd:new Date().toISOString().slice(0,10)});store.set('radar-custom',CUSTOM);mergeCustom();}tk=ctk;}
+  if(!tk||!(q>0)||!(px>0)||!fecha){$('#mv-err').textContent='Completa instrumento, fecha, lote y precio.';return;}
+  if(tipo==='venta'){const p=positions().find(x=>x.tk===tk);if(!p||p.q<q){$('#mv-err').textContent='No tienes tantas acciones registradas para vender.';return;}}
+  LOTS.push({id:Date.now().toString(36),tk,tipo,fecha,q,px,cur,fx:cur==='MXN'?fx:null,nota:$('#mv-nota').value.trim()});store.set('radar-lots',LOTS);
+  closeModals();renderCartera();if($('#detail').classList.contains('on'))openDetail(tk);});
+function closeModals(){document.querySelectorAll('.modal').forEach(m=>m.classList.remove('on'));}
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModals()));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModals();}));
+$('#avatar').addEventListener('click',()=>openModal('m-perfil'));
+
+/* ================== EVENTOS GLOBALES ================== */
+document.addEventListener('click',e=>{
+  const i=e.target.closest('.i[data-def]');if(i){e.stopPropagation();e.preventDefault();const g=GLOS[i.dataset.def];if(g){$('#s-t').textContent=g.t;$('#s-b').textContent=g.b;$('#sheet').classList.add('on');$('#scrim').classList.add('on');}return;}
+  const o=e.target.closest('[data-open]');if(o){openModal(o.dataset.open,o.dataset.pre);return;}
+  const c=e.target.closest('.pos[data-tk]');if(c){openDetail(c.dataset.tk);}
+});
+const hideSheet=()=>{$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');};
+$('#scrim').addEventListener('click',hideSheet);$('#sheet').addEventListener('click',hideSheet);
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));$('#v-'+b.dataset.v).classList.add('on');window.scrollTo(0,0);$('#title').textContent={cartera:'Radar',semana:'Semana',ref:'Referentes',fichas:'Fichas',aprende:'Aprende'}[b.dataset.v];}));
+
+/* ================== CARGA DE DATOS ================== */
+function setStatus(){$('#status').innerHTML=LIVE?`<b>● EN VIVO</b><br>${STAMP}`:`<span class="off">● SIN CONEXIÓN</span><br>${STAMP}`;}
+function useCSV(csv,live,stamp){const d=buildData(csv);if(!d.length)throw new Error('vacío');DATA=d;mergeCustom();LIVE=live;STAMP=stamp;renderTape();renderCartera();setStatus();}
+async function load(){
+  const cached=store.get('radar-csv',null);
+  try{useCSV(cached?cached.csv:SNAPSHOT_CSV,false,cached?'datos del '+cached.stamp:'datos del '+SNAPSHOT_DATE);}catch(e){useCSV(SNAPSHOT_CSV,false,'datos del '+SNAPSHOT_DATE);}
+  for(const u of SHEET_URLS){
+    try{const r=await fetch(u+(u.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;const t=await r.text();if(!/^Ticker/.test(t.trim()))throw 0;
+      const stamp=new Date().toLocaleString('es-MX',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});useCSV(t,true,stamp);store.set('radar-csv',{csv:t,stamp});return;}catch(e){}
+  }
+}
+renderSemana();renderRefs();renderFichas();renderTop5();renderReqs();renderAprende();load();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load();});
+</script>
+</body>
+</html>
